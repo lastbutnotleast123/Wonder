@@ -1,0 +1,54 @@
+# 输出目录
+output/
+
+# 模型目录
+models/
+
+# Python缓存文件
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 虚拟环境
+venv/
+env/
+ENV/
+
+# 示例图像（可选）
+# images/
+
+# IDE文件
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 项目特定文件
+uploads/
+image_features/
+image_db/
+api_output/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 日志文件
+*.log
+logs/
+
+# 临时文件
+temp/
+tmp/
+
+# 数据库文件
+*.db
+*.sqlite3
+
+# 环境配置
+.env
+.env.local
+
+# 依赖包
+node_modules/
+package-lock.json 

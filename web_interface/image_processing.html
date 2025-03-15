@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图像处理 - OpenCV图像处理与计算机视觉系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* 图像处理页面专属样式 - 绿色系主题 */
+        body {
+            font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+            background-color: #f0f5f3; /* 更换为稍微暗一点的背景色 */
+            color: #333;
+            padding-top: 70px; /* 为固定导航栏留出空间 */
+        }
+        
+        /* 绿色系头部 */
+        .header {
+            background: linear-gradient(120deg, var(--image-process-primary), var(--image-process-secondary));
+            color: white;
+            padding: 3rem 0;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 15px rgba(26, 105, 82, 0.3); /* 更暗的阴影 */
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 40%;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="rgba(255,255,255,0.15)" fill-opacity="1" d="M0,64L48,96C96,128,192,192,288,192C384,192,480,128,576,122.7C672,117,768,171,864,197.3C960,224,1056,224,1152,208C1248,192,1344,160,1392,144L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>');
+            background-size: cover;
+            background-position: center;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 14px;
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card-header {
+            background: linear-gradient(to right, #43c6ac, #28a745);
+            color: white;
+            font-weight: 600;
+            border: none;
+            padding: 1rem 1.5rem;
+        }
+        
+        .btn-primary, .btn-outline-primary:hover {
+            background: linear-gradient(to right, #43c6ac, #28a745);
+            border: none;
+            border-radius: 30px;
+            padding: 0.6rem 1.25rem;
+            font-weight: 500;
+            box-shadow: 0 4px 8px rgba(67, 198, 172, 0.25);
+            transition: all 0.3s ease;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(to right, #3ab89d, #218838);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(67, 198, 172, 0.35);
+        }
+        
+        .btn-outline-primary {
+            color: #43c6ac;
+            border: 1px solid #43c6ac;
+            border-radius: 30px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-outline-danger {
+            color: #dc3545;
+            border-color: #dc3545;
+            border-radius: 30px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-outline-danger:hover {
+            background-color: #dc3545;
+            transform: translateY(-2px);
+        }
+        
+        /* 图像预览容器 */
+        .preview-container {
+            position: relative;
+            min-height: 300px;
+            border: 2px dashed #43c6ac;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            background-color: rgba(67, 198, 172, 0.03);
+        }
+        
+        .preview-container:hover {
+            border-color: #28a745;
+            background-color: rgba(67, 198, 172, 0.07);
+        }
+        
+        .drop-zone {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .drop-zone i {
+            font-size: 3.5rem;
+            color: #43c6ac;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .drop-zone-active {
+            background-color: rgba(67, 198, 172, 0.15);
+            border: 2px dashed #28a745;
+        }
+        
+        .drop-zone-active i {
+            transform: scale(1.2);
+            color: #28a745;
+        }
+        
+        .image-upload-label {
+            cursor: pointer;
+            padding: 0.5rem 1.5rem;
+            background: linear-gradient(to right, #43c6ac, #28a745);
+            color: white;
+            border-radius: 30px;
+            display: inline-block;
+            font-weight: 500;
+            box-shadow: 0 4px 8px rgba(67, 198, 172, 0.25);
+            transition: all 0.3s ease;
+        }
+        
+        .image-upload-label:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(67, 198, 172, 0.35);
+        }
+        
+        /* 加载动画 */
+        .loading {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.9);
+            z-index: 10;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            border-radius: 14px;
+        }
+        
+        .loading-spinner {
+            width: 3rem;
+            height: 3rem;
+            color: #43c6ac;
+        }
+        
+        /* 结果容器 */
+        .result-container {
+            display: none;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeUpIn 0.5s ease forwards;
+        }
+        
+        @keyframes fadeUpIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .result-tabs .nav-link {
+            color: #555;
+            font-weight: 500;
+            padding: 0.75rem 1.25rem;
+            border-radius: 8px 8px 0 0;
+            transition: all 0.3s ease;
+        }
+        
+        .result-tabs .nav-link.active {
+            color: #43c6ac;
+            border-color: #dee2e6 #dee2e6 #fff;
+            position: relative;
+        }
+        
+        .result-tabs .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(to right, #43c6ac, #28a745);
+            border-radius: 3px 3px 0 0;
+        }
+        
+        .result-image {
+            max-width: 100%;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        /* 操作按钮样式 */
+        .operation-btn {
+            margin: 0.25rem;
+            transition: all 0.3s ease;
+            border-radius: 30px;
+        }
+        
+        .operation-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .operation-description {
+            padding: 15px;
+            border-radius: 10px;
+            background-color: rgba(67, 198, 172, 0.05);
+            border-left: 4px solid #43c6ac;
+            margin-bottom: 15px;
+        }
+        
+        /* 自定义滚动条 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #43c6ac;
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #28a745;
+        }
+        
+        /* 页脚 */
+        .footer {
+            background: linear-gradient(120deg, #43c6ac, #28a745);
+            color: white;
+            padding: 2rem 0;
+            margin-top: 3rem;
+        }
+        
+        .footer a {
+            color: white;
+            transition: all 0.2s ease;
+        }
+        
+        .footer a:hover {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+        }
+        
+        .footer ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .footer ul li {
+            margin-bottom: 0.5rem;
+        }
+        
+        /* 确保导航样式一致 */
+        .navbar .nav-link {
+            font-weight: 500 !important;
+            margin: 0 5px !important;
+            padding: 8px 16px !important;
+            border-radius: 30px !important;
+            transition: all 0.3s ease !important;
+            font-size: 0.95rem !important;
+        }
+        
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .header {
+                padding: 2rem 0;
+            }
+            
+            .header h1 {
+                font-size: 1.8rem;
+            }
+            
+            .operation-btn {
+                margin: 0.15rem;
+                padding: 0.4rem 0.8rem;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="index.html">
+                <img src="images/logo.png" alt="OpenCV视觉系统" class="logo-img" onerror="this.style.display='none'">
+                <i class="bi bi-camera"></i> OpenCV视觉系统
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.html">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="image_processing.html">图像处理</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="face_recognition.html">人脸识别</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="object_detection.html">目标检测</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="deep_learning.html">深度学习</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="image_retrieval.html">图像检索</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 头部 -->
+    <header class="header text-center">
+        <div class="container">
+            <h1 class="animate__animated animate__fadeInDown">图像处理</h1>
+            <p class="lead animate__animated animate__fadeInUp animate__delay-1s">上传图像并应用各种处理功能</p>
+        </div>
+    </header>
+
+    <!-- 主内容 -->
+    <main class="container">
+        <div class="row">
+            <!-- 左侧：图像上传和预览 -->
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">图像预览</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="preview-container">
+                            <img id="preview-image" class="preview-image" alt="预览图像">
+                            <div class="drop-zone" id="drop-zone">
+                                <i class="bi bi-cloud-arrow-up"></i>
+                                <p>拖放图像到此处，或点击选择图像</p>
+                                <label class="image-upload-label">
+                                    选择图像
+                                    <input type="file" id="image-upload" style="display: none;" accept="image/*">
+                                </label>
+                            </div>
+                            <div class="loading" id="loading">
+                                <div class="spinner-border loading-spinner text-primary" role="status"></div>
+                                <p class="mt-2">处理中，请稍候...</p>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <span id="image-info">未选择图像</span>
+                            <button class="btn btn-outline-danger btn-sm" id="reset-btn" disabled>
+                                <i class="bi bi-x-circle"></i> 清除
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 操作说明 -->
+                <div class="card mt-4" id="operations-info">
+                    <div class="card-header">
+                        <h5 class="mb-0">操作说明</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="basic-description" class="operation-description">
+                            <h6>基本图像处理</h6>
+                            <p>对图像进行基本处理，包括调整大小、裁剪等操作。</p>
+                        </div>
+                        
+                        <div id="face_detect-description" class="operation-description">
+                            <h6>人脸检测</h6>
+                            <p>检测图像中的人脸位置并标记出来。使用Haar级联分类器算法。</p>
+                        </div>
+                        
+                        <div id="edge-description" class="operation-description">
+                            <h6>边缘检测</h6>
+                            <p>检测并突出显示图像中的边缘。可以选择不同的边缘检测算法：</p>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="edge_method" id="edge_canny" value="canny" checked>
+                                <label class="form-check-label" for="edge_canny">Canny（默认）</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="edge_method" id="edge_sobel" value="sobel">
+                                <label class="form-check-label" for="edge_sobel">Sobel</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="edge_method" id="edge_laplacian" value="laplacian">
+                                <label class="form-check-label" for="edge_laplacian">Laplacian</label>
+                            </div>
+                        </div>
+                        
+                        <div id="color-description" class="operation-description">
+                            <h6>颜色分析</h6>
+                            <p>分析图像中的颜色信息。可以选择不同的颜色分析模式：</p>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="color_mode" id="color_dominant" value="dominant" checked>
+                                <label class="form-check-label" for="color_dominant">主要颜色提取（默认）</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="color_mode" id="color_histogram" value="histogram">
+                                <label class="form-check-label" for="color_histogram">颜色直方图</label>
+                            </div>
+                            <div class="form-group mt-2" id="dominant_colors_group">
+                                <label for="num_colors">提取的颜色数量：</label>
+                                <input type="number" class="form-control form-control-sm" id="num_colors" min="1" max="10" value="5">
+                            </div>
+                        </div>
+                        
+                        <div id="object_detect-description" class="operation-description">
+                            <h6>物体检测</h6>
+                            <p>检测图像中的常见物体并标记出来。使用预训练的SSD MobileNet模型。</p>
+                            <div class="form-group">
+                                <label for="confidence">置信度阈值：</label>
+                                <input type="range" class="form-range" id="confidence" min="0.1" max="0.9" step="0.1" value="0.5">
+                                <span id="confidence-value">0.5</span>
+                            </div>
+                        </div>
+                        
+                        <div id="image_retrieve-description" class="operation-description">
+                            <h6>图像检索</h6>
+                            <p>在数据库中查找与当前图像相似的图像。注意：需要先构建图像数据库。</p>
+                            <div class="form-group">
+                                <label for="db_path">数据库路径：</label>
+                                <input type="text" class="form-control form-control-sm" id="db_path" value="models/image_db_sift.pkl">
+                            </div>
+                            <div class="form-group mt-2">
+                                <label for="top_k">返回结果数量：</label>
+                                <input type="number" class="form-control form-control-sm" id="top_k" min="1" max="20" value="5">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 右侧：操作选择和结果显示 -->
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">选择操作</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info" role="alert">
+                            <i class="bi bi-info-circle"></i> 
+                            上传图像后，选择要应用的操作，然后点击"处理图像"按钮。
+                        </div>
+                        
+                        <div class="d-flex flex-wrap">
+                            <button class="btn btn-outline-primary operation-btn" data-operation="basic">
+                                基本处理
+                            </button>
+                            <button class="btn btn-outline-primary operation-btn" data-operation="face_detect">
+                                人脸检测
+                            </button>
+                            <button class="btn btn-outline-primary operation-btn" data-operation="edge">
+                                边缘检测
+                            </button>
+                            <button class="btn btn-outline-primary operation-btn" data-operation="color">
+                                颜色分析
+                            </button>
+                            <button class="btn btn-outline-primary operation-btn" data-operation="object_detect">
+                                物体检测
+                            </button>
+                            <button class="btn btn-outline-primary operation-btn" data-operation="image_retrieve">
+                                图像检索
+                            </button>
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>已选择：<span id="selected-operations">无</span></span>
+                            <button class="btn btn-primary" id="process-btn" disabled>
+                                <i class="bi bi-gear"></i> 处理图像
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 结果显示 -->
+                <div class="card result-container" id="result-container">
+                    <div class="card-header">
+                        <h5 class="mb-0">处理结果</h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- 结果选项卡 -->
+                        <ul class="nav nav-tabs result-tabs" id="result-tabs">
+                            <!-- 动态生成选项卡 -->
+                        </ul>
+                        
+                        <!-- 选项卡内容 -->
+                        <div class="tab-content mt-3" id="result-content">
+                            <!-- 动态生成内容 -->
+                        </div>
+                        
+                        <!-- 下载按钮 -->
+                        <div class="d-flex justify-content-end mt-3">
+                            <button class="btn btn-success" id="download-btn">
+                                <i class="bi bi-download"></i> 下载结果
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4 mb-4 mb-md-0">
+                    <h5>关于本系统</h5>
+                    <p>基于OpenCV和深度学习的图像处理系统，提供多种图像处理、计算机视觉和深度学习功能。</p>
+                    <div class="social-links">
+                        <a href="#"><i class="bi bi-github"></i></a>
+                        <a href="#"><i class="bi bi-youtube"></i></a>
+                        <a href="#"><i class="bi bi-linkedin"></i></a>
+                        <a href="#"><i class="bi bi-twitter"></i></a>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4 mb-md-0">
+                    <h5>快速链接</h5>
+                    <ul>
+                        <li><a href="index.html">首页</a></li>
+                        <li><a href="image_processing.html">图像处理</a></li>
+                        <li><a href="face_recognition.html">人脸识别</a></li>
+                        <li><a href="object_detection.html">目标检测</a></li>
+                        <li><a href="deep_learning.html">深度学习</a></li>
+                        <li><a href="image_retrieval.html">图像检索</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h5>相关资源</h5>
+                    <ul>
+                        <li><a href="https://opencv.org/" target="_blank">OpenCV官网</a></li>
+                        <li><a href="https://docs.opencv.org/" target="_blank">OpenCV文档</a></li>
+                        <li><a href="https://github.com/opencv/opencv" target="_blank">OpenCV GitHub</a></li>
+                        <li><a href="https://www.tensorflow.org/" target="_blank">TensorFlow</a></li>
+                        <li><a href="https://pytorch.org/" target="_blank">PyTorch</a></li>
+                    </ul>
+                </div>
+            </div>
+            <hr>
+            <p class="text-center mb-0">© 2025 OpenCV图像处理与计算机视觉系统. 保留所有权利.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取DOM元素
+            const imageUpload = document.getElementById('image-upload');
+            const previewImage = document.getElementById('preview-image');
+            const dropZone = document.getElementById('drop-zone');
+            const imageInfo = document.getElementById('image-info');
+            const resetBtn = document.getElementById('reset-btn');
+            const processBtn = document.getElementById('process-btn');
+            const operationBtns = document.querySelectorAll('.operation-btn');
+            const selectedOperations = document.getElementById('selected-operations');
+            const resultContainer = document.getElementById('result-container');
+            const resultTabs = document.getElementById('result-tabs');
+            const resultContent = document.getElementById('result-content');
+            const downloadBtn = document.getElementById('download-btn');
+            const loading = document.getElementById('loading');
+            const confidenceSlider = document.getElementById('confidence');
+            const confidenceValue = document.getElementById('confidence-value');
+            const operationDescriptions = document.querySelectorAll('.operation-description');
+            
+            // 全局变量
+            let selectedOps = [];
+            let imageFile = null;
+            let processedResults = {};
+            
+            // 初始化页面
+            function init() {
+                // 设置上传图像事件
+                imageUpload.addEventListener('change', handleImageUpload);
+                
+                // 重置按钮事件
+                resetBtn.addEventListener('click', resetImage);
+                
+                // 处理按钮事件
+                processBtn.addEventListener('click', processImage);
+                
+                // 设置操作按钮事件
+                operationBtns.forEach(btn => {
+                    btn.addEventListener('click', toggleOperation);
+                });
+                
+                // 下载按钮事件
+                downloadBtn.addEventListener('click', downloadResult);
+                
+                // 拖放功能
+                setupDragAndDrop();
+                
+                // 设置置信度滑块
+                confidenceSlider.addEventListener('input', function() {
+                    confidenceValue.textContent = this.value;
+                });
+                
+                // 颜色模式切换事件
+                document.querySelectorAll('input[name="color_mode"]').forEach(radio => {
+                    radio.addEventListener('change', function() {
+                        const dominantGroup = document.getElementById('dominant_colors_group');
+                        dominantGroup.style.display = this.value === 'dominant' ? 'block' : 'none';
+                    });
+                });
+            }
+            
+            // 处理图像上传
+            function handleImageUpload(e) {
+                const files = e.target.files;
+                if (files.length > 0) {
+                    imageFile = files[0];
+                    displayImagePreview(imageFile);
+                }
+            }
+            
+            // 显示图像预览
+            function displayImagePreview(file) {
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImage.src = e.target.result;
+                    previewImage.style.display = 'block';
+                    dropZone.style.display = 'none';
+                    
+                    // 设置图像信息
+                    const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                    imageInfo.textContent = `${file.name} (${fileSizeMB} MB)`;
+                    
+                    // 启用按钮
+                    resetBtn.disabled = false;
+                    processBtn.disabled = selectedOps.length > 0;
+                };
+                reader.readAsDataURL(file);
+            }
+            
+            // 重置图像
+            function resetImage() {
+                previewImage.src = '';
+                previewImage.style.display = 'none';
+                dropZone.style.display = 'flex';
+                imageInfo.textContent = '未选择图像';
+                imageFile = null;
+                
+                // 禁用按钮
+                resetBtn.disabled = true;
+                processBtn.disabled = true;
+                
+                // 隐藏结果
+                resultContainer.style.display = 'none';
+                
+                // 重置文件输入
+                imageUpload.value = '';
+            }
+            
+            // 切换操作
+            function toggleOperation(e) {
+                const operation = e.target.dataset.operation;
+                const index = selectedOps.indexOf(operation);
+                
+                if (index === -1) {
+                    // 添加操作
+                    selectedOps.push(operation);
+                    e.target.classList.remove('btn-outline-primary');
+                    e.target.classList.add('btn-primary');
+                    
+                    // 显示对应的操作说明
+                    const descEl = document.getElementById(`${operation}-description`);
+                    if (descEl) {
+                        operationDescriptions.forEach(el => el.style.display = 'none');
+                        descEl.style.display = 'block';
+                    }
+                } else {
+                    // 移除操作
+                    selectedOps.splice(index, 1);
+                    e.target.classList.remove('btn-primary');
+                    e.target.classList.add('btn-outline-primary');
+                    
+                    // 如果没有选中的操作，隐藏所有说明
+                    if (selectedOps.length === 0) {
+                        operationDescriptions.forEach(el => el.style.display = 'none');
+                    } else {
+                        // 显示最后一个选中的操作说明
+                        const lastOp = selectedOps[selectedOps.length - 1];
+                        operationDescriptions.forEach(el => el.style.display = 'none');
+                        const lastDescEl = document.getElementById(`${lastOp}-description`);
+                        if (lastDescEl) lastDescEl.style.display = 'block';
+                    }
+                }
+                
+                // 更新已选择操作显示
+                if (selectedOps.length > 0) {
+                    selectedOperations.textContent = selectedOps.join(', ');
+                    processBtn.disabled = !imageFile;
+                } else {
+                    selectedOperations.textContent = '无';
+                    processBtn.disabled = true;
+                }
+            }
+            
+            // 处理图像
+            function processImage() {
+                if (!imageFile || selectedOps.length === 0) {
+                    alert('请选择图像并至少选择一个操作！');
+                    return;
+                }
+                
+                // 显示加载中
+                loading.style.display = 'flex';
+                
+                // 创建FormData对象
+                const formData = new FormData();
+                formData.append('image', imageFile);
+                formData.append('operations', selectedOps.join(','));
+                
+                // 添加额外参数
+                if (selectedOps.includes('edge')) {
+                    const edgeMethod = document.querySelector('input[name="edge_method"]:checked').value;
+                    formData.append('edge_method', edgeMethod);
+                }
+                
+                if (selectedOps.includes('color')) {
+                    const colorMode = document.querySelector('input[name="color_mode"]:checked').value;
+                    formData.append('color_mode', colorMode);
+                    
+                    if (colorMode === 'dominant') {
+                        const numColors = document.getElementById('num_colors').value;
+                        formData.append('num_colors', numColors);
+                    }
+                }
+                
+                if (selectedOps.includes('object_detect')) {
+                    const confidence = document.getElementById('confidence').value;
+                    formData.append('confidence', confidence);
+                }
+                
+                if (selectedOps.includes('image_retrieve')) {
+                    const dbPath = document.getElementById('db_path').value;
+                    const topK = document.getElementById('top_k').value;
+                    formData.append('db_path', dbPath);
+                    formData.append('top_k', topK);
+                }
+                
+                // 发送请求
+                console.log("正在发送处理请求...");
+                fetch('/api/process', {
+                    method: 'POST',
+                    body: formData,
+                })
+                .then(response => {
+                    // 检查响应状态
+                    if (!response.ok) {
+                        console.error('响应错误:', response.status, response.statusText);
+                        if (response.status === 415) {
+                            throw new Error('不支持的媒体类型。请确保上传的是有效的图像文件。');
+                        } else {
+                            throw new Error(`服务器响应错误: ${response.status} ${response.statusText}`);
+                        }
+                    }
+                    
+                    // 检查Content-Type
+                    const contentType = response.headers.get('content-type');
+                    if (!contentType || !contentType.includes('application/json')) {
+                        console.error('响应不是JSON:', contentType);
+                        throw new Error('服务器返回了非JSON响应');
+                    }
+                    
+                    return response.json();
+                })
+                .then(data => {
+                    // 隐藏加载中
+                    loading.style.display = 'none';
+                    
+                    if (data.success) {
+                        // 保存结果
+                        processedResults = data.results;
+                        
+                        // 显示结果
+                        displayResults(data.results);
+                    } else {
+                        alert('处理失败: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    // 隐藏加载中
+                    loading.style.display = 'none';
+                    
+                    console.error('处理失败:', error);
+                    alert('处理失败: ' + error.message);
+                });
+            }
+            
+            // 显示处理结果
+            function displayResults(results) {
+                // 清空现有结果
+                resultTabs.innerHTML = '';
+                resultContent.innerHTML = '';
+                
+                // 创建结果选项卡
+                let isFirst = true;
+                for (const op in results) {
+                    const result = results[op];
+                    
+                    // 创建选项卡
+                    const tabItem = document.createElement('li');
+                    tabItem.className = 'nav-item';
+                    
+                    const tabLink = document.createElement('a');
+                    tabLink.className = isFirst ? 'nav-link active' : 'nav-link';
+                    tabLink.setAttribute('id', `${op}-tab`);
+                    tabLink.setAttribute('data-bs-toggle', 'tab');
+                    tabLink.setAttribute('href', `#${op}-result`);
+                    tabLink.setAttribute('role', 'tab');
+                    tabLink.textContent = getOperationName(op);
+                    
+                    tabItem.appendChild(tabLink);
+                    resultTabs.appendChild(tabItem);
+                    
+                    // 创建内容面板
+                    const contentPane = document.createElement('div');
+                    contentPane.className = isFirst ? 'tab-pane fade show active' : 'tab-pane fade';
+                    contentPane.setAttribute('id', `${op}-result`);
+                    contentPane.setAttribute('role', 'tabpanel');
+                    
+                    // 添加结果内容
+                    if (result.success) {
+                        if (result.result_image) {
+                            const img = document.createElement('img');
+                            img.className = 'result-image';
+                            img.src = 'data:image/jpeg;base64,' + result.result_image;
+                            img.alt = getOperationName(op) + ' 结果';
+                            contentPane.appendChild(img);
+                        }
+                        
+                        // 添加特定操作的结果数据
+                        if (op === 'object_detect' && result.detections) {
+                            const detectionInfo = document.createElement('div');
+                            detectionInfo.className = 'mt-3';
+                            
+                            const heading = document.createElement('h6');
+                            heading.textContent = '检测结果：';
+                            detectionInfo.appendChild(heading);
+                            
+                            const list = document.createElement('ul');
+                            list.className = 'list-group';
+                            
+                            result.detections.forEach(det => {
+                                const item = document.createElement('li');
+                                item.className = 'list-group-item';
+                                item.innerHTML = `<strong>${det.class}</strong>: 置信度 ${(det.confidence * 100).toFixed(2)}%`;
+                                list.appendChild(item);
+                            });
+                            
+                            detectionInfo.appendChild(list);
+                            contentPane.appendChild(detectionInfo);
+                        }
+                        
+                        if (op === 'color' && result.mode === 'dominant' && result.colors) {
+                            const colorInfo = document.createElement('div');
+                            colorInfo.className = 'mt-3';
+                            
+                            const heading = document.createElement('h6');
+                            heading.textContent = '主要颜色：';
+                            colorInfo.appendChild(heading);
+                            
+                            const colorDisplay = document.createElement('div');
+                            colorDisplay.className = 'd-flex flex-wrap gap-2 mt-2';
+                            
+                            result.colors.forEach(color => {
+                                const colorBox = document.createElement('div');
+                                colorBox.className = 'd-flex flex-column align-items-center me-3';
+                                
+                                const box = document.createElement('div');
+                                box.style.width = '50px';
+                                box.style.height = '50px';
+                                box.style.backgroundColor = color.hex;
+                                box.style.border = '1px solid #ddd';
+                                box.style.borderRadius = '4px';
+                                
+                                const label = document.createElement('small');
+                                label.className = 'mt-1';
+                                label.textContent = color.hex;
+                                
+                                colorBox.appendChild(box);
+                                colorBox.appendChild(label);
+                                colorDisplay.appendChild(colorBox);
+                            });
+                            
+                            colorInfo.appendChild(colorDisplay);
+                            contentPane.appendChild(colorInfo);
+                        }
+                        
+                        if (op === 'face_recognize' && result.faces) {
+                            const faceInfo = document.createElement('div');
+                            faceInfo.className = 'mt-3';
+                            
+                            const heading = document.createElement('h6');
+                            heading.textContent = '识别到的人脸：';
+                            faceInfo.appendChild(heading);
+                            
+                            const list = document.createElement('ul');
+                            list.className = 'list-group';
+                            
+                            result.faces.forEach(face => {
+                                const item = document.createElement('li');
+                                item.className = 'list-group-item';
+                                item.textContent = face.name || '未知人脸';
+                                list.appendChild(item);
+                            });
+                            
+                            faceInfo.appendChild(list);
+                            contentPane.appendChild(faceInfo);
+                        }
+                    } else {
+                        const errorMsg = document.createElement('div');
+                        errorMsg.className = 'alert alert-danger';
+                        errorMsg.textContent = '处理失败: ' + (result.error || '未知错误');
+                        contentPane.appendChild(errorMsg);
+                    }
+                    
+                    resultContent.appendChild(contentPane);
+                    isFirst = false;
+                }
+                
+                // 显示结果容器
+                resultContainer.style.display = 'block';
+            }
+            
+            // 下载结果
+            function downloadResult() {
+                // 获取当前活动的选项卡
+                const activeTab = document.querySelector('.tab-pane.active');
+                if (!activeTab) return;
+                
+                const tabId = activeTab.id;
+                const op = tabId.replace('-result', '');
+                
+                if (processedResults[op] && processedResults[op].result_image) {
+                    // 创建下载链接
+                    const link = document.createElement('a');
+                    link.href = 'data:image/jpeg;base64,' + processedResults[op].result_image;
+                    link.download = `result_${op}_${new Date().getTime()}.jpg`;
+                    link.click();
+                }
+            }
+            
+            // 设置拖放功能
+            function setupDragAndDrop() {
+                // 阻止默认拖放行为
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    dropZone.addEventListener(eventName, preventDefaults, false);
+                    document.body.addEventListener(eventName, preventDefaults, false);
+                });
+                
+                // 高亮拖放区域
+                ['dragenter', 'dragover'].forEach(eventName => {
+                    dropZone.addEventListener(eventName, highlight, false);
+                });
+                
+                ['dragleave', 'drop'].forEach(eventName => {
+                    dropZone.addEventListener(eventName, unhighlight, false);
+                });
+                
+                // 处理拖放
+                dropZone.addEventListener('drop', handleDrop, false);
+                
+                function preventDefaults(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+                
+                function highlight() {
+                    dropZone.classList.add('drop-zone-active');
+                }
+                
+                function unhighlight() {
+                    dropZone.classList.remove('drop-zone-active');
+                }
+                
+                function handleDrop(e) {
+                    const dt = e.dataTransfer;
+                    const files = dt.files;
+                    
+                    if (files.length > 0) {
+                        imageFile = files[0];
+                        
+                        // 检查文件类型
+                        const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/bmp', 'image/webp'];
+                        if (!validTypes.includes(imageFile.type)) {
+                            alert('请上传有效的图像文件！');
+                            return;
+                        }
+                        
+                        displayImagePreview(imageFile);
+                    }
+                }
+            }
+            
+            // 获取操作名称
+            function getOperationName(op) {
+                const opNames = {
+                    'basic': '基本处理',
+                    'face_detect': '人脸检测',
+                    'edge': '边缘检测',
+                    'color': '颜色分析',
+                    'object_detect': '物体检测',
+                    'image_retrieve': '图像检索',
+                    'face_recognize': '人脸识别',
+                    'deep_classify': '图像分类',
+                    'deep_detect': '深度物体检测',
+                    'segment': '图像分割'
+                };
+                
+                return opNames[op] || op;
+            }
+            
+            // 初始化页面
+            init();
+        });
+    </script>
+</body>
+</html> 

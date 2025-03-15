@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>人脸检测与识别 - OpenCV图像处理与计算机视觉系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            padding-top: 70px; /* 为固定导航栏留出空间 */
+        }
+        .header {
+            background: linear-gradient(120deg, #2c3e50, #4b6cb7);
+            color: white;
+            padding: 3rem 0;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 40%;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="rgba(255,255,255,0.1)" fill-opacity="1" d="M0,192L48,170.7C96,149,192,107,288,112C384,117,480,171,576,192C672,213,768,203,864,170.7C960,139,1056,85,1152,58.7C1248,32,1344,32,1392,32L1440,32L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>');
+            background-size: cover;
+            background-position: center;
+        }
+        .card {
+            margin-bottom: 1.5rem;
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            overflow: hidden;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+        }
+        .card-header {
+            background: linear-gradient(to right, #4b6cb7, #182848);
+            color: white;
+            border-radius: 12px 12px 0 0 !important;
+            padding: 1rem 1.5rem;
+            font-weight: 600;
+            border: none;
+        }
+        .footer {
+            background: linear-gradient(120deg, #2c3e50, #4b6cb7);
+            color: white;
+            padding: 2rem 0;
+            margin-top: 3rem;
+        }
+        .footer a {
+            color: white;
+            transition: all 0.2s ease;
+        }
+        .footer a:hover {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+        }
+        .preview-container {
+            position: relative;
+            min-height: 300px;
+            border: 2px dashed #4b6cb7;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .preview-container:hover {
+            border-color: #2c3e50;
+            background-color: rgba(75, 108, 183, 0.05);
+        }
+        .preview-image {
+            max-width: 100%;
+            max-height: 500px;
+            display: none;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .image-upload-label {
+            cursor: pointer;
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(to right, #4b6cb7, #182848);
+            color: white;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            display: inline-block;
+        }
+        .image-upload-label:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+        .btn-custom {
+            background: linear-gradient(to right, #4b6cb7, #182848);
+            border: none;
+            border-radius: 50px;
+            padding: 0.75rem 1.5rem;
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+        .btn-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+            color: white;
+        }
+        .result-tabs .nav-link {
+            color: #4b6cb7;
+            font-weight: 600;
+            border-radius: 8px 8px 0 0;
+        }
+        .result-tabs .nav-link.active {
+            color: #2c3e50;
+            background-color: #fff;
+            border-color: #dee2e6 #dee2e6 #fff;
+        }
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+            color: #4b6cb7;
+        }
+        .face-card {
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+        .face-card:hover {
+            transform: translateY(-5px);
+        }
+        .face-card img {
+            width: 100%;
+            height: auto;
+            transition: transform 0.3s ease;
+        }
+        .face-card:hover img {
+            transform: scale(1.03);
+        }
+        .face-info {
+            padding: 1rem;
+            background: #f9f9f9;
+        }
+        .face-db-container {
+            max-height: 500px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        .face-db-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        .face-db-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        .face-db-container::-webkit-scrollbar-thumb {
+            background: #4b6cb7;
+            border-radius: 10px;
+        }
+        .face-db-container::-webkit-scrollbar-thumb:hover {
+            background: #2c3e50;
+        }
+        .navbar .nav-link {
+            font-weight: 500 !important;
+            margin: 0 5px !important;
+            padding: 8px 16px !important;
+            border-radius: 30px !important;
+            transition: all 0.3s ease !important;
+            font-size: 0.95rem !important;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="index.html">
+                <img src="images/logo.png" alt="OpenCV视觉系统" class="logo-img" onerror="this.style.display='none'">
+                <i class="bi bi-camera"></i> OpenCV视觉系统
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.html">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="image_processing.html">图像处理</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="face_recognition.html">人脸识别</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="object_detection.html">目标检测</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="deep_learning.html">深度学习</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="image_retrieval.html">图像检索</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 头部 -->
+    <header class="header text-center">
+        <div class="container">
+            <h1 class="animate__animated animate__fadeInDown">人脸检测与识别</h1>
+            <p class="lead animate__animated animate__fadeInUp animate__delay-1s">上传图像以进行人脸检测和识别，或将新面孔添加到数据库中</p>
+        </div>
+    </header>
+
+    <!-- 主内容 -->
+    <main class="container">
+        <div class="row">
+            <!-- 左侧：图像上传和预览 -->
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-camera"></i> 图像预览</span>
+                        <button class="btn btn-sm btn-outline-light" id="resetBtn">
+                            <i class="bi bi-arrow-counterclockwise"></i> 重置
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="preview-container" id="previewContainer">
+                            <img id="previewImage" class="preview-image" alt="预览图像">
+                            <div id="uploadPrompt">
+                                <label for="imageUpload" class="image-upload-label">
+                                    <i class="bi bi-upload"></i> 点击上传图像
+                                </label>
+                                <input type="file" id="imageUpload" style="display: none;" accept="image/*">
+                                <p class="mt-3 text-muted">或将图像拖放到此处</p>
+                            </div>
+                            <div id="loadingSpinner" style="display: none;">
+                                <div class="spinner-border" role="status">
+                                    <span class="visually-hidden">加载中...</span>
+                                </div>
+                                <p class="mt-2">处理中，请稍候...</p>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <div>
+                                <small class="text-muted" id="fileInfo"></small>
+                            </div>
+                            <button id="deleteBtn" class="btn btn-sm btn-outline-danger" style="display: none;">
+                                <i class="bi bi-trash"></i> 删除
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <i class="bi bi-gear"></i> 操作选项
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <p><i class="bi bi-info-circle"></i> 选择要执行的操作：</p>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="operationType" id="detectFaces" value="face_detect" checked>
+                                <label class="form-check-label" for="detectFaces">
+                                    人脸检测 - 检测图像中的人脸位置
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="operationType" id="recognizeFaces" value="face_recognize">
+                                <label class="form-check-label" for="recognizeFaces">
+                                    人脸识别 - 识别图像中人物的身份
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="operationType" id="addFace" value="add_face">
+                                <label class="form-check-label" for="addFace">
+                                    添加人脸 - 将人脸添加到数据库
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div id="nameInputContainer" style="display: none;">
+                            <div class="mb-3">
+                                <label for="personName" class="form-label">人名：</label>
+                                <input type="text" class="form-control" id="personName" placeholder="请输入此人的姓名">
+                                <div class="form-text">添加人脸到数据库时必须提供姓名</div>
+                            </div>
+                        </div>
+
+                        <button id="processBtn" class="btn btn-custom w-100 mt-3">
+                            <i class="bi bi-play-fill"></i> 处理图像
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧：结果显示 -->
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="bi bi-person-badge"></i> 处理结果
+                    </div>
+                    <div class="card-body">
+                        <ul class="nav nav-tabs result-tabs" id="resultTabs">
+                            <li class="nav-item">
+                                <a class="nav-link active" data-bs-toggle="tab" href="#resultTab">检测结果</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" data-bs-toggle="tab" href="#facesTab">人脸库</a>
+                            </li>
+                        </ul>
+                        <div class="tab-content mt-3">
+                            <div class="tab-pane fade show active" id="resultTab">
+                                <div id="noResultMessage" class="text-center py-5">
+                                    <i class="bi bi-image text-muted" style="font-size: 3rem;"></i>
+                                    <p class="mt-3 text-muted">上传并处理图像后，结果将显示在这里</p>
+                                </div>
+                                <div id="resultContainer" style="display: none;">
+                                    <div class="mb-3">
+                                        <img id="resultImage" class="img-fluid rounded" style="max-width: 100%;">
+                                    </div>
+                                    <div id="detectionInfo" class="alert alert-info" style="display: none;">
+                                        <i class="bi bi-info-circle"></i> <span id="detectionMessage"></span>
+                                    </div>
+                                    <div id="facesList" class="mt-3" style="display: none;">
+                                        <h5>检测到的人脸：</h5>
+                                        <div class="row" id="facesContainer">
+                                            <!-- 人脸卡片将在这里动态添加 -->
+                                        </div>
+                                    </div>
+                                    <div class="d-grid mt-3">
+                                        <button id="downloadBtn" class="btn btn-custom">
+                                            <i class="bi bi-download"></i> 下载结果
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="facesTab">
+                                <div class="face-db-container">
+                                    <div class="row" id="faceDbContainer">
+                                        <!-- 示例人脸卡片 - 实际使用时将动态生成 -->
+                                        <div class="col-md-6">
+                                            <div class="face-card">
+                                                <img src="https://via.placeholder.com/300x300" alt="示例人脸">
+                                                <div class="face-info">
+                                                    <h5>张三</h5>
+                                                    <p class="text-muted mb-0">添加于 2023-09-15</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="face-card">
+                                                <img src="https://via.placeholder.com/300x300" alt="示例人脸">
+                                                <div class="face-info">
+                                                    <h5>李四</h5>
+                                                    <p class="text-muted mb-0">添加于 2023-09-10</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="noFacesMessage" class="text-center py-5" style="display: none;">
+                                        <i class="bi bi-person-x text-muted" style="font-size: 3rem;"></i>
+                                        <p class="mt-3 text-muted">人脸数据库中还没有人脸，请添加一些</p>
+                                    </div>
+                                </div>
+                                <div class="d-grid mt-3">
+                                    <button id="refreshFacesBtn" class="btn btn-custom">
+                                        <i class="bi bi-arrow-repeat"></i> 刷新人脸库
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <i class="bi bi-info-circle"></i> 功能说明
+                    </div>
+                    <div class="card-body">
+                        <h5>人脸检测</h5>
+                        <p>使用OpenCV的人脸检测器来识别图像中的人脸位置。系统会标记出所有检测到的人脸，适用于包含多个人脸的图像。</p>
+
+                        <h5>人脸识别</h5>
+                        <p>将检测到的人脸与已知人脸数据库进行比对，识别图像中人物的身份。识别基于面部特征，可以在不同光照和角度条件下工作。</p>
+
+                        <h5>添加人脸</h5>
+                        <p>将新的人脸添加到数据库中，以便将来进行识别。添加时需要提供该人的姓名，建议使用正面、光线良好的照片以提高识别准确率。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4 mb-4 mb-md-0">
+                    <h5>关于本系统</h5>
+                    <p>基于OpenCV和深度学习的图像处理系统，提供多种图像处理、计算机视觉和深度学习功能。</p>
+                    <div class="social-links">
+                        <a href="#"><i class="bi bi-github"></i></a>
+                        <a href="#"><i class="bi bi-youtube"></i></a>
+                        <a href="#"><i class="bi bi-linkedin"></i></a>
+                        <a href="#"><i class="bi bi-twitter"></i></a>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4 mb-md-0">
+                    <h5>快速链接</h5>
+                    <ul>
+                        <li><a href="index.html">首页</a></li>
+                        <li><a href="image_processing.html">图像处理</a></li>
+                        <li><a href="face_recognition.html">人脸识别</a></li>
+                        <li><a href="object_detection.html">目标检测</a></li>
+                        <li><a href="deep_learning.html">深度学习</a></li>
+                        <li><a href="image_retrieval.html">图像检索</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h5>相关资源</h5>
+                    <ul>
+                        <li><a href="https://opencv.org/" target="_blank">OpenCV官网</a></li>
+                        <li><a href="https://docs.opencv.org/" target="_blank">OpenCV文档</a></li>
+                        <li><a href="https://github.com/opencv/opencv" target="_blank">OpenCV GitHub</a></li>
+                        <li><a href="https://www.tensorflow.org/" target="_blank">TensorFlow</a></li>
+                        <li><a href="https://pytorch.org/" target="_blank">PyTorch</a></li>
+                    </ul>
+                </div>
+            </div>
+            <hr>
+            <p class="text-center mb-0">© 2025 OpenCV图像处理与计算机视觉系统. 保留所有权利.</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 元素引用
+            const previewContainer = document.getElementById('previewContainer');
+            const previewImage = document.getElementById('previewImage');
+            const uploadPrompt = document.getElementById('uploadPrompt');
+            const imageUpload = document.getElementById('imageUpload');
+            const fileInfo = document.getElementById('fileInfo');
+            const deleteBtn = document.getElementById('deleteBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const processBtn = document.getElementById('processBtn');
+            const resultContainer = document.getElementById('resultContainer');
+            const noResultMessage = document.getElementById('noResultMessage');
+            const resultImage = document.getElementById('resultImage');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const detectionInfo = document.getElementById('detectionInfo');
+            const detectionMessage = document.getElementById('detectionMessage');
+            const facesList = document.getElementById('facesList');
+            const facesContainer = document.getElementById('facesContainer');
+            const nameInputContainer = document.getElementById('nameInputContainer');
+            const personName = document.getElementById('personName');
+            const operationTypeRadios = document.querySelectorAll('input[name="operationType"]');
+            
+            // 添加事件监听器
+            imageUpload.addEventListener('change', handleFileSelect);
+            previewContainer.addEventListener('dragover', handleDragOver);
+            previewContainer.addEventListener('dragleave', handleDragLeave);
+            previewContainer.addEventListener('drop', handleDrop);
+            deleteBtn.addEventListener('click', resetUpload);
+            resetBtn.addEventListener('click', resetUpload);
+            processBtn.addEventListener('click', processImage);
+            downloadBtn.addEventListener('click', downloadResult);
+
+            // 当操作类型改变时
+            operationTypeRadios.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    // 如果选择了添加人脸，显示名称输入框
+                    if (this.value === 'add_face') {
+                        nameInputContainer.style.display = 'block';
+                    } else {
+                        nameInputContainer.style.display = 'none';
+                    }
+                });
+            });
+
+            // 处理文件选择
+            function handleFileSelect(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    displayPreview(file);
+                }
+            }
+
+            // 处理拖拽文件
+            function handleDragOver(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                previewContainer.classList.add('border-primary');
+            }
+
+            function handleDragLeave(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                previewContainer.classList.remove('border-primary');
+            }
+
+            function handleDrop(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                previewContainer.classList.remove('border-primary');
+                
+                const file = event.dataTransfer.files[0];
+                if (file && file.type.startsWith('image/')) {
+                    displayPreview(file);
+                }
+            }
+
+            // 显示预览图
+            function displayPreview(file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImage.src = e.target.result;
+                    previewImage.style.display = 'block';
+                    uploadPrompt.style.display = 'none';
+                    fileInfo.textContent = `${file.name} (${formatFileSize(file.size)})`;
+                    deleteBtn.style.display = 'block';
+                    
+                    // 重置结果区域
+                    resultContainer.style.display = 'none';
+                    noResultMessage.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+
+            // 格式化文件大小
+            function formatFileSize(bytes) {
+                if (bytes < 1024) return bytes + ' B';
+                else if (bytes < 1048576) return (bytes / 1024).toFixed(2) + ' KB';
+                else return (bytes / 1048576).toFixed(2) + ' MB';
+            }
+
+            // 重置上传
+            function resetUpload() {
+                previewImage.src = '';
+                previewImage.style.display = 'none';
+                uploadPrompt.style.display = 'block';
+                fileInfo.textContent = '';
+                deleteBtn.style.display = 'none';
+                imageUpload.value = '';
+                resultContainer.style.display = 'none';
+                noResultMessage.style.display = 'block';
+                detectionInfo.style.display = 'none';
+                facesList.style.display = 'none';
+                facesContainer.innerHTML = '';
+            }
+
+            // 处理图像
+            function processImage() {
+                // 检查是否有图像
+                if (!previewImage.src || previewImage.style.display === 'none') {
+                    alert('请先上传图像');
+                    return;
+                }
+
+                // 获取选中的操作类型
+                let operation = document.querySelector('input[name="operationType"]:checked').value;
+                
+                // 如果选择了添加人脸，检查是否输入了姓名
+                if (operation === 'add_face' && !personName.value.trim()) {
+                    alert('添加人脸时请输入姓名');
+                    return;
+                }
+
+                // 显示加载状态
+                uploadPrompt.style.display = 'none';
+                previewImage.style.display = 'none';
+                loadingSpinner.style.display = 'block';
+                
+                // 准备表单数据
+                const formData = new FormData();
+                const imageFile = dataURLtoFile(previewImage.src, 'image.jpg');
+                formData.append('image', imageFile);
+                formData.append('operations', operation);
+                
+                if (operation === 'add_face') {
+                    formData.append('name', personName.value.trim());
+                }
+
+                // 发送请求
+                let endpoint = '/api/process';
+                if (operation === 'add_face') {
+                    endpoint = '/api/add_face';
+                }
+
+                fetch(endpoint, {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('服务器响应错误: ' + response.status);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // 隐藏加载状态
+                    loadingSpinner.style.display = 'none';
+                    previewImage.style.display = 'block';
+                    
+                    // 显示结果
+                    noResultMessage.style.display = 'none';
+                    resultContainer.style.display = 'block';
+                    
+                    if (operation === 'face_detect' && data.results.face_detect) {
+                        // 显示人脸检测结果
+                        const result = data.results.face_detect;
+                        if (result.success) {
+                            resultImage.src = 'data:image/jpeg;base64,' + result.result_image;
+                            detectionInfo.style.display = 'block';
+                            detectionMessage.textContent = result.message;
+                        } else {
+                            detectionInfo.style.display = 'block';
+                            detectionMessage.textContent = '处理失败: ' + (result.error || '未知错误');
+                        }
+                    } else if (operation === 'face_recognize' && data.results.face_recognize) {
+                        // 显示人脸识别结果
+                        const result = data.results.face_recognize;
+                        if (result.success) {
+                            resultImage.src = 'data:image/jpeg;base64,' + result.result_image;
+                            detectionInfo.style.display = 'block';
+                            detectionMessage.textContent = '识别完成';
+                            
+                            // 显示识别到的人脸
+                            if (result.faces && result.faces.length > 0) {
+                                facesList.style.display = 'block';
+                                facesContainer.innerHTML = '';
+                                
+                                result.faces.forEach(face => {
+                                    const faceCard = document.createElement('div');
+                                    faceCard.className = 'col-md-6 mb-3';
+                                    faceCard.innerHTML = `
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <h5 class="card-title">${face.name || '未知'}</h5>
+                                                <p class="card-text">置信度: ${(face.confidence * 100).toFixed(2)}%</p>
+                                            </div>
+                                        </div>
+                                    `;
+                                    facesContainer.appendChild(faceCard);
+                                });
+                            }
+                        } else {
+                            detectionInfo.style.display = 'block';
+                            detectionMessage.textContent = '处理失败: ' + (result.error || '未知错误');
+                        }
+                    } else if (operation === 'add_face') {
+                        // 显示添加人脸结果
+                        if (data.success) {
+                            detectionInfo.style.display = 'block';
+                            detectionMessage.textContent = `成功添加 ${personName.value} 的人脸到数据库`;
+                            // 可选：刷新人脸库
+                        } else {
+                            detectionInfo.style.display = 'block';
+                            detectionMessage.textContent = '添加失败: ' + (data.error || '未知错误');
+                        }
+                    }
+                })
+                .catch(error => {
+                    // 处理错误
+                    console.error('处理图像错误:', error);
+                    loadingSpinner.style.display = 'none';
+                    previewImage.style.display = 'block';
+                    alert('处理图像时发生错误: ' + error.message);
+                });
+            }
+
+            // 下载结果
+            function downloadResult() {
+                if (resultImage.src) {
+                    const link = document.createElement('a');
+                    link.href = resultImage.src;
+                    link.download = 'face_result_' + new Date().getTime() + '.jpg';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                }
+            }
+
+            // 将 dataURL 转换为 File 对象
+            function dataURLtoFile(dataurl, filename) {
+                const arr = dataurl.split(',');
+                const mime = arr[0].match(/:(.*?);/)[1];
+                const bstr = atob(arr[1]);
+                let n = bstr.length;
+                const u8arr = new Uint8Array(n);
+                while (n--) {
+                    u8arr[n] = bstr.charCodeAt(n);
+                }
+                return new File([u8arr], filename, {type: mime});
+            }
+        });
+    </script>
+</body>
+</html> 

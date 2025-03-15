@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>深度学习 - OpenCV图像处理与计算机视觉系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* 深度学习页面专属样式 - 紫色系主题 */
+        body {
+            font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+            background-color: #f9f8fd;
+            color: #333;
+            padding-top: 70px; /* 为固定导航栏留出空间 */
+        }
+        
+        /* 紫色系头部 */
+        .header {
+            background: linear-gradient(135deg, #6f42c1, #9370DB);
+            color: white;
+            padding: 3rem 0;
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(111, 66, 193, 0.25);
+        }
+        
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 40%;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="rgba(255,255,255,0.15)" fill-opacity="1" d="M0,224L48,192C96,160,192,96,288,85.3C384,75,480,117,576,149.3C672,181,768,203,864,218.7C960,235,1056,245,1152,234.7C1248,224,1344,192,1392,176L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>');
+            background-size: cover;
+            background-position: center;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            margin-bottom: 1.5rem;
+            transition: all 0.3s ease;
+            background-color: white;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(111, 66, 193, 0.15);
+        }
+        
+        .card-header {
+            background: linear-gradient(to right, #6f42c1, #8a5fdd);
+            color: white;
+            font-weight: 600;
+            padding: 1rem 1.5rem;
+            border: none;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(to right, #6f42c1, #8a5fdd);
+            border: none;
+            border-radius: 50px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 500;
+            box-shadow: 0 4px 10px rgba(111, 66, 193, 0.25);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(to right, #5e35b1, #7952b3);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(111, 66, 193, 0.35);
+        }
+        
+        .btn-success {
+            background: linear-gradient(to right, #6f42c1, #8a5fdd);
+            border: none;
+            border-radius: 50px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 500;
+            box-shadow: 0 4px 10px rgba(111, 66, 193, 0.25);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-success:hover {
+            background: linear-gradient(to right, #5e35b1, #7952b3);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(111, 66, 193, 0.35);
+        }
+        
+        /* 紫色系标签页 */
+        .nav-tabs {
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .nav-tabs .nav-link {
+            color: #6c757d;
+            font-weight: 600;
+            margin-right: 5px;
+            padding: 0.75rem 1.25rem;
+            border-radius: 10px 10px 0 0;
+            border: 1px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-tabs .nav-link:hover {
+            color: #6f42c1;
+            border-color: transparent;
+        }
+        
+        .nav-tabs .nav-link.active {
+            color: #6f42c1;
+            background-color: white;
+            border-color: #e9ecef #e9ecef #fff;
+            position: relative;
+        }
+        
+        .nav-tabs .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(to right, #6f42c1, #8a5fdd);
+            border-radius: 3px 3px 0 0;
+        }
+        
+        /* 上传区域样式 */
+        .dropzone {
+            min-height: 200px;
+            border: 2px dashed #b19cd9;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            transition: all 0.3s ease;
+            background-color: rgba(111, 66, 193, 0.03);
+        }
+        
+        .dropzone:hover, .dropzone.drag-over {
+            background-color: rgba(111, 66, 193, 0.07);
+            border-color: #6f42c1;
+        }
+        
+        .dropzone i {
+            font-size: 3rem;
+            color: #b19cd9;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .image-preview {
+            max-width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        /* 预测结果样式 */
+        .prediction-item {
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            background-color: rgba(111, 66, 193, 0.05);
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .prediction-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 3px 10px rgba(111, 66, 193, 0.1);
+            background-color: rgba(111, 66, 193, 0.08);
+        }
+        
+        .prediction-bar {
+            height: 6px;
+            background-color: #f2f2f2;
+            border-radius: 3px;
+            margin: 8px 0;
+            overflow: hidden;
+        }
+        
+        .prediction-fill {
+            height: 100%;
+            background: linear-gradient(to right, #6f42c1, #9370DB);
+            border-radius: 3px;
+        }
+        
+        /* 模型卡片 */
+        .model-card {
+            transition: all 0.4s ease;
+            border: none;
+            border-radius: 20px;
+            overflow: hidden;
+        }
+        
+        .model-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 12px 25px rgba(111, 66, 193, 0.15);
+        }
+        
+        .card-icon {
+            height: 70px;
+            width: 70px;
+            line-height: 70px;
+            font-size: 32px;
+            border-radius: 50%;
+            margin: 0 auto;
+            background: linear-gradient(135deg, #6f42c1, #9370DB);
+            color: white;
+            box-shadow: 0 5px 15px rgba(111, 66, 193, 0.3);
+        }
+        
+        /* 自定义滚动条 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #9370DB;
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6f42c1;
+        }
+        
+        /* 页脚 */
+        .footer {
+            background: linear-gradient(135deg, #6f42c1, #9370DB);
+            color: white;
+            padding: 2rem 0;
+            margin-top: 3rem;
+        }
+        
+        .footer a {
+            color: white;
+            transition: all 0.2s ease;
+        }
+        
+        .footer a:hover {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+        }
+        
+        /* 结果容器 */
+        .results-container {
+            display: none;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeIn 0.5s ease forwards;
+        }
+        
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* 加载动画 */
+        .spinner-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            border-radius: 16px;
+        }
+        
+        .spinner-border {
+            color: #6f42c1 !important;
+        }
+        
+        /* 确保导航样式一致 */
+        .navbar .nav-link {
+            font-weight: 500 !important;
+            margin: 0 5px !important;
+            padding: 8px 16px !important;
+            border-radius: 30px !important;
+            transition: all 0.3s ease !important;
+            font-size: 0.95rem !important;
+        }
+        
+        /* 响应式调整 */
+        @media (max-width: 767px) {
+            .header {
+                padding: 2rem 0;
+            }
+            
+            .header h1 {
+                font-size: 1.8rem;
+            }
+        }
+        
+        /* 动画效果 */
+        .animate-on-scroll.visible {
+            animation: fadeInUp 0.6s ease forwards;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .section-title {
+            position: relative;
+            margin-bottom: 3rem;
+            text-align: center;
+        }
+        
+        .section-title h2 {
+            font-weight: 700;
+            color: #6f42c1;
+            display: inline-block;
+            padding-bottom: 10px;
+            position: relative;
+        }
+        
+        .section-title h2::after {
+            content: '';
+            position: absolute;
+            width: 50%;
+            height: 3px;
+            background: linear-gradient(to right, #6f42c1, #9370DB);
+            bottom: 0;
+            left: 25%;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="index.html">
+                <img src="images/logo.png" alt="OpenCV视觉系统" class="logo-img" onerror="this.style.display='none'">
+                <i class="bi bi-camera"></i> OpenCV视觉系统
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.html">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="image_processing.html">图像处理</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="face_recognition.html">人脸识别</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="object_detection.html">目标检测</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="deep_learning.html">深度学习</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="image_retrieval.html">图像检索</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <header class="header">
+        <div class="container">
+            <h1 class="animate__animated animate__fadeInDown">深度学习应用</h1>
+            <p class="lead animate__animated animate__fadeInUp animate__delay-1s">利用先进的深度学习模型进行图像分类、语义分割和风格迁移</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <ul class="nav nav-tabs" id="deepLearningTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="classify-tab" data-bs-toggle="tab" data-bs-target="#classify" type="button" role="tab" aria-controls="classify" aria-selected="true">图像分类</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="segment-tab" data-bs-toggle="tab" data-bs-target="#segment" type="button" role="tab" aria-controls="segment" aria-selected="false">图像分割</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="models-tab" data-bs-toggle="tab" data-bs-target="#models" type="button" role="tab" aria-controls="models" aria-selected="false">可用模型</button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="deepLearningTabsContent">
+            <!-- 图像分类 -->
+            <div class="tab-pane fade show active" id="classify" role="tabpanel" aria-labelledby="classify-tab">
+                <div class="row">
+                    <div class="col-lg-7">
+                        <div class="card animate-on-scroll">
+                            <div class="card-header">
+                                <i class="bi bi-image"></i> 上传图像
+                            </div>
+                            <div class="card-body">
+                                <div class="dropzone" id="classifyDropzone">
+                                    <i class="bi bi-cloud-arrow-up"></i>
+                                    <p>拖放图像到此处或点击上传</p>
+                                    <input type="file" id="classifyFileInput" accept="image/*" style="display: none;">
+                                    <div class="spinner-overlay" id="classifySpinner" style="display: none;">
+                                        <div class="spinner-border" role="status">
+                                            <span class="visually-hidden">处理中...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="text-center mt-3">
+                                    <img id="classifyPreview" class="image-preview" style="display: none;" />
+                                </div>
+                                <div class="d-flex justify-content-between mt-4">
+                                    <button id="classifyResetBtn" class="btn btn-outline-secondary" disabled>
+                                        <i class="bi bi-arrow-counterclockwise"></i> 重置
+                                    </button>
+                                    <button id="classifyBtn" class="btn btn-primary" disabled>
+                                        <i class="bi bi-search"></i> 开始分类
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-5">
+                        <div class="card animate-on-scroll">
+                            <div class="card-header">
+                                <i class="bi bi-gear"></i> 分类设置
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="classifyModel" class="form-label">选择模型</label>
+                                    <select class="form-select" id="classifyModel">
+                                        <option value="mobilenet">MobileNet (轻量级)</option>
+                                        <option value="resnet">ResNet (高精度)</option>
+                                        <option value="efficientnet">EfficientNet (高效率)</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="topK" class="form-label">显示前K个结果</label>
+                                    <select class="form-select" id="topK">
+                                        <option value="3">Top 3</option>
+                                        <option value="5" selected>Top 5</option>
+                                        <option value="10">Top 10</option>
+                                    </select>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="showConfidence" checked>
+                                    <label class="form-check-label" for="showConfidence">
+                                        显示置信度
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="results-container" id="classifyResults">
+                            <div class="card">
+                                <div class="card-header">
+                                    <i class="bi bi-list-check"></i> 分类结果
+                                </div>
+                                <div class="card-body">
+                                    <div id="predictionsContainer">
+                                        <!-- 预测结果将在这里显示 -->
+                                    </div>
+                                    <div class="d-flex justify-content-center mt-3">
+                                        <a id="classifyDownloadBtn" class="btn btn-success" download="classification_result.jpg" href="#">
+                                            <i class="bi bi-download"></i> 下载结果图像
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 图像分割 -->
+            <div class="tab-pane fade" id="segment" role="tabpanel" aria-labelledby="segment-tab">
+                <div class="row">
+                    <div class="col-lg-7">
+                        <div class="card animate-on-scroll">
+                            <div class="card-header">
+                                <i class="bi bi-image"></i> 上传图像
+                            </div>
+                            <div class="card-body">
+                                <div class="dropzone" id="segmentDropzone">
+                                    <i class="bi bi-cloud-arrow-up"></i>
+                                    <p>拖放图像到此处或点击上传</p>
+                                    <input type="file" id="segmentFileInput" accept="image/*" style="display: none;">
+                                    <div class="spinner-overlay" id="segmentSpinner" style="display: none;">
+                                        <div class="spinner-border" role="status">
+                                            <span class="visually-hidden">处理中...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="text-center mt-3">
+                                    <img id="segmentPreview" class="image-preview" style="display: none;" />
+                                </div>
+                                <div class="d-flex justify-content-between mt-4">
+                                    <button id="segmentResetBtn" class="btn btn-outline-secondary" disabled>
+                                        <i class="bi bi-arrow-counterclockwise"></i> 重置
+                                    </button>
+                                    <button id="segmentBtn" class="btn btn-primary" disabled>
+                                        <i class="bi bi-palette"></i> 开始分割
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-5">
+                        <div class="card animate-on-scroll">
+                            <div class="card-header">
+                                <i class="bi bi-gear"></i> 分割设置
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="segmentModel" class="form-label">选择模型</label>
+                                    <select class="form-select" id="segmentModel">
+                                        <option value="deeplabv3">DeepLabV3 (语义分割)</option>
+                                        <option value="unet">U-Net (医学图像分割)</option>
+                                        <option value="fcn">FCN (全卷积网络)</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">透明度调整</label>
+                                    <input type="range" class="form-range" id="opacitySlider" min="0.1" max="0.9" step="0.1" value="0.5">
+                                    <small class="text-muted">调整分割遮罩的透明度</small>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="showOriginal" checked>
+                                    <label class="form-check-label" for="showOriginal">
+                                        显示与原图叠加
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="results-container" id="segmentResults">
+                            <div class="card">
+                                <div class="card-header">
+                                    <i class="bi bi-layers"></i> 分割结果
+                                </div>
+                                <div class="card-body">
+                                    <div class="text-center">
+                                        <img id="segmentResultImage" class="results-image" />
+                                    </div>
+                                    <div class="mt-3">
+                                        <p id="segmentInfo">分割完成。</p>
+                                    </div>
+                                    <div class="d-flex justify-content-center mt-3">
+                                        <a id="segmentDownloadBtn" class="btn btn-success" download="segmentation_result.jpg" href="#">
+                                            <i class="bi bi-download"></i> 下载结果图像
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 可用模型 -->
+            <div class="tab-pane fade" id="models" role="tabpanel" aria-labelledby="models-tab">
+                <div class="section-title mt-4">
+                    <h2>预训练模型库</h2>
+                </div>
+                <p class="text-center mb-5">本系统集成了多种顶尖的深度学习预训练模型，用于图像分类、目标检测和语义分割任务。</p>
+
+                <div class="row mb-5">
+                    <div class="col-12">
+                        <h3 class="mb-4 fw-bold">图像分类模型</h3>
+                    </div>
+                    <div class="col-md-4 mb-4 animate-on-scroll">
+                        <div class="model-card card h-100">
+                            <div class="card-body text-center p-4">
+                                <div class="card-icon mb-3">
+                                    <i class="bi bi-cpu"></i>
+                                </div>
+                                <h4 class="card-title mb-3">MobileNet</h4>
+                                <p class="card-text">轻量级CNN模型，专为移动和嵌入式设备优化，平衡速度和准确性。</p>
+                                <p><strong>参数量:</strong> 4.2M</p>
+                                <p><strong>推理速度:</strong> 快</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-4 animate-on-scroll">
+                        <div class="model-card card h-100">
+                            <div class="card-body text-center p-4">
+                                <div class="card-icon mb-3">
+                                    <i class="bi bi-diagram-3"></i>
+                                </div>
+                                <h4 class="card-title mb-3">ResNet</h4>
+                                <p class="card-text">深度残差网络，通过跳跃连接解决深层网络的梯度消失问题，提高准确率。</p>
+                                <p><strong>参数量:</strong> 25.6M</p>
+                                <p><strong>推理速度:</strong> 中等</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-4 animate-on-scroll">
+                        <div class="model-card card h-100">
+                            <div class="card-body text-center p-4">
+                                <div class="card-icon mb-3">
+                                    <i class="bi bi-lightning"></i>
+                                </div>
+                                <h4 class="card-title mb-3">EfficientNet</h4>
+                                <p class="card-text">高效扩展CNN模型，通过复合缩放方法平衡网络深度、宽度和分辨率。</p>
+                                <p><strong>参数量:</strong> 7.8M</p>
+                                <p><strong>推理速度:</strong> 中等</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h3 class="mb-4 fw-bold">图像分割模型</h3>
+                    </div>
+                    <div class="col-md-4 mb-4 animate-on-scroll">
+                        <div class="model-card card h-100">
+                            <div class="card-body text-center p-4">
+                                <div class="card-icon mb-3">
+                                    <i class="bi bi-grid-3x3"></i>
+                                </div>
+                                <h4 class="card-title mb-3">DeepLabV3</h4>
+                                <p class="card-text">使用空洞空间卷积金字塔池化的语义分割模型，处理多尺度物体。</p>
+                                <p><strong>精度:</strong> 高</p>
+                                <p><strong>推理速度:</strong> 中等</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-4 animate-on-scroll">
+                        <div class="model-card card h-100">
+                            <div class="card-body text-center p-4">
+                                <div class="card-icon mb-3">
+                                    <i class="bi bi-layers-half"></i>
+                                </div>
+                                <h4 class="card-title mb-3">U-Net</h4>
+                                <p class="card-text">U形编码-解码结构，特别适用于医学图像分割，特征保留良好。</p>
+                                <p><strong>精度:</strong> 高</p>
+                                <p><strong>推理速度:</strong> 快</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-4 animate-on-scroll">
+                        <div class="model-card card h-100">
+                            <div class="card-body text-center p-4">
+                                <div class="card-icon mb-3">
+                                    <i class="bi bi-aspect-ratio"></i>
+                                </div>
+                                <h4 class="card-title mb-3">FCN</h4>
+                                <p class="card-text">全卷积网络，将分类网络扩展为分割网络，端到端学习像素级分类。</p>
+                                <p><strong>精度:</strong> 中等</p>
+                                <p><strong>推理速度:</strong> 快</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4 mb-4 mb-md-0">
+                    <h5>关于本系统</h5>
+                    <p>基于OpenCV和深度学习的图像处理系统，提供多种图像处理、计算机视觉和深度学习功能。</p>
+                    <div class="social-links">
+                        <a href="#"><i class="bi bi-github"></i></a>
+                        <a href="#"><i class="bi bi-youtube"></i></a>
+                        <a href="#"><i class="bi bi-linkedin"></i></a>
+                        <a href="#"><i class="bi bi-twitter"></i></a>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4 mb-md-0">
+                    <h5>快速链接</h5>
+                    <ul>
+                        <li><a href="/index.html">首页</a></li>
+                        <li><a href="/image_processing.html">图像处理</a></li>
+                        <li><a href="/face_recognition.html">人脸识别</a></li>
+                        <li><a href="/object_detection.html">目标检测</a></li>
+                        <li><a href="/deep_learning.html">深度学习</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h5>相关资源</h5>
+                    <ul>
+                        <li><a href="https://opencv.org/" target="_blank">OpenCV官网</a></li>
+                        <li><a href="https://www.tensorflow.org/" target="_blank">TensorFlow</a></li>
+                        <li><a href="https://pytorch.org/" target="_blank">PyTorch</a></li>
+                        <li><a href="https://github.com/opencv/opencv" target="_blank">OpenCV GitHub</a></li>
+                    </ul>
+                </div>
+            </div>
+            <hr>
+            <p class="text-center mb-0">© 2025 OpenCV图像处理与计算机视觉系统. 保留所有权利.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // 导航栏滚动效果
+            const navbar = document.querySelector('.navbar');
+            
+            function checkScroll() {
+                if (window.scrollY > 50) {
+                    navbar.classList.add('scrolled');
+                } else {
+                    navbar.classList.remove('scrolled');
+                }
+                
+                // 滚动动画
+                document.querySelectorAll('.animate-on-scroll').forEach(element => {
+                    const elementTop = element.getBoundingClientRect().top;
+                    const elementVisible = 150;
+                    
+                    if (elementTop < window.innerHeight - elementVisible) {
+                        element.classList.add('visible');
+                    }
+                });
+            }
+            
+            // 初始检查并添加滚动监听
+            checkScroll();
+            window.addEventListener('scroll', checkScroll);
+            
+            // 图像分类相关元素
+            const classifyDropzone = document.getElementById('classifyDropzone');
+            const classifyFileInput = document.getElementById('classifyFileInput');
+            const classifyPreview = document.getElementById('classifyPreview');
+            const classifySpinner = document.getElementById('classifySpinner');
+            const classifyResetBtn = document.getElementById('classifyResetBtn');
+            const classifyBtn = document.getElementById('classifyBtn');
+            const classifyResults = document.getElementById('classifyResults');
+            const classifyDownloadBtn = document.getElementById('classifyDownloadBtn');
+            const predictionsContainer = document.getElementById('predictionsContainer');
+            
+            // 图像分割相关元素
+            const segmentDropzone = document.getElementById('segmentDropzone');
+            const segmentFileInput = document.getElementById('segmentFileInput');
+            const segmentPreview = document.getElementById('segmentPreview');
+            const segmentSpinner = document.getElementById('segmentSpinner');
+            const segmentResetBtn = document.getElementById('segmentResetBtn');
+            const segmentBtn = document.getElementById('segmentBtn');
+            const segmentResults = document.getElementById('segmentResults');
+            const segmentResultImage = document.getElementById('segmentResultImage');
+            const segmentDownloadBtn = document.getElementById('segmentDownloadBtn');
+            
+            // 分类上传与图像预览处理
+            let classifyFile = null;
+            
+            classifyDropzone.addEventListener('click', () => classifyFileInput.click());
+            
+            classifyDropzone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                classifyDropzone.classList.add('drag-over');
+            });
+            
+            classifyDropzone.addEventListener('dragleave', () => {
+                classifyDropzone.classList.remove('drag-over');
+            });
+            
+            classifyDropzone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                classifyDropzone.classList.remove('drag-over');
+                
+                if (e.dataTransfer.files.length) {
+                    classifyFileInput.files = e.dataTransfer.files;
+                    handleClassifyFile(e.dataTransfer.files[0]);
+                }
+            });
+            
+            classifyFileInput.addEventListener('change', () => {
+                if (classifyFileInput.files.length) {
+                    handleClassifyFile(classifyFileInput.files[0]);
+                }
+            });
+            
+            function handleClassifyFile(file) {
+                if (!file.type.match('image.*')) {
+                    alert('请选择图像文件！');
+                    return;
+                }
+                
+                classifyFile = file;
+                classifyResetBtn.disabled = false;
+                classifyBtn.disabled = false;
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    classifyPreview.src = e.target.result;
+                    classifyPreview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+            
+            classifyResetBtn.addEventListener('click', () => {
+                classifyFile = null;
+                classifyFileInput.value = '';
+                classifyPreview.style.display = 'none';
+                classifyResetBtn.disabled = true;
+                classifyBtn.disabled = true;
+                classifyResults.style.display = 'none';
+            });
+            
+            classifyBtn.addEventListener('click', () => {
+                if (!classifyFile) return;
+                
+                classifySpinner.style.display = 'flex';
+                
+                // 创建表单数据
+                const formData = new FormData();
+                formData.append('image', classifyFile);
+                formData.append('operations', 'deep_classify');
+                formData.append('model_type', document.getElementById('classifyModel').value);
+                formData.append('top_k', document.getElementById('topK').value);
+                
+                // 发送请求
+                fetch('/api/process', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`服务器响应错误: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    classifySpinner.style.display = 'none';
+                    
+                    if (data.success && data.results.deep_classify && data.results.deep_classify.success) {
+                        // 获取预测结果
+                        const predictions = data.results.deep_classify.predictions || [];
+                        
+                        // 显示预测结果
+                        let predictionsHTML = '';
+                        
+                        predictions.forEach((prediction, index) => {
+                            const showConfidence = document.getElementById('showConfidence').checked;
+                            const className = prediction.class_name;
+                            const probability = prediction.probability;
+                            
+                            predictionsHTML += `
+                                <div class="prediction-item">
+                                    <span>${index + 1}. ${className}</span>
+                                    ${showConfidence ? `
+                                    <div class="prediction-bar">
+                                        <div class="prediction-fill" style="width: ${probability * 100}%"></div>
+                                    </div>
+                                    <span>${(probability * 100).toFixed(1)}%</span>
+                                    ` : ''}
+                                </div>
+                            `;
+                        });
+                        
+                        predictionsContainer.innerHTML = predictionsHTML || '<p class="text-center">无法识别该图像</p>';
+                        
+                        // 设置下载按钮
+                        if (data.results.deep_classify.result_image) {
+                            classifyDownloadBtn.href = `data:image/jpeg;base64,${data.results.deep_classify.result_image}`;
+                        }
+                        
+                        // 显示结果
+                        classifyResults.style.display = 'block';
+                    } else {
+                        alert('分类失败: ' + (data.results.deep_classify?.error || '未知错误'));
+                    }
+                })
+                .catch(error => {
+                    classifySpinner.style.display = 'none';
+                    alert('处理请求失败: ' + error.message);
+                });
+            });
+            
+            // 图像分割相关代码
+            let segmentFile = null;
+            
+            segmentDropzone.addEventListener('click', () => segmentFileInput.click());
+            
+            segmentDropzone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                segmentDropzone.classList.add('drag-over');
+            });
+            
+            segmentDropzone.addEventListener('dragleave', () => {
+                segmentDropzone.classList.remove('drag-over');
+            });
+            
+            segmentDropzone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                segmentDropzone.classList.remove('drag-over');
+                
+                if (e.dataTransfer.files.length) {
+                    segmentFileInput.files = e.dataTransfer.files;
+                    handleSegmentFile(e.dataTransfer.files[0]);
+                }
+            });
+            
+            segmentFileInput.addEventListener('change', () => {
+                if (segmentFileInput.files.length) {
+                    handleSegmentFile(segmentFileInput.files[0]);
+                }
+            });
+            
+            function handleSegmentFile(file) {
+                if (!file.type.match('image.*')) {
+                    alert('请选择图像文件！');
+                    return;
+                }
+                
+                segmentFile = file;
+                segmentResetBtn.disabled = false;
+                segmentBtn.disabled = false;
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    segmentPreview.src = e.target.result;
+                    segmentPreview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+            
+            segmentResetBtn.addEventListener('click', () => {
+                segmentFile = null;
+                segmentFileInput.value = '';
+                segmentPreview.style.display = 'none';
+                segmentResetBtn.disabled = true;
+                segmentBtn.disabled = true;
+                segmentResults.style.display = 'none';
+            });
+            
+            segmentBtn.addEventListener('click', () => {
+                if (!segmentFile) return;
+                
+                segmentSpinner.style.display = 'flex';
+                
+                // 创建表单数据
+                const formData = new FormData();
+                formData.append('image', segmentFile);
+                formData.append('operations', 'segment');
+                formData.append('model_type', document.getElementById('segmentModel').value);
+                formData.append('opacity', document.getElementById('opacitySlider').value);
+                formData.append('show_original', document.getElementById('showOriginal').checked ? '1' : '0');
+                
+                // 发送请求
+                fetch('/api/process', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`服务器响应错误: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    segmentSpinner.style.display = 'none';
+                    
+                    if (data.success && data.results.segment && data.results.segment.success) {
+                        // 显示分割结果图像
+                        if (data.results.segment.result_image) {
+                            segmentResultImage.src = `data:image/jpeg;base64,${data.results.segment.result_image}`;
+                            segmentDownloadBtn.href = `data:image/jpeg;base64,${data.results.segment.result_image}`;
+                        }
+                        
+                        // 显示分割信息
+                        const segInfo = data.results.segment.segmentation || {};
+                        const uniqueClasses = segInfo.unique_classes || [];
+                        
+                        document.getElementById('segmentInfo').textContent = 
+                            `分割完成，检测到 ${uniqueClasses.length} 个类别。`;
+                        
+                        // 显示结果
+                        segmentResults.style.display = 'block';
+                    } else {
+                        alert('分割失败: ' + (data.results.segment?.error || '未知错误'));
+                    }
+                })
+                .catch(error => {
+                    segmentSpinner.style.display = 'none';
+                    alert('处理请求失败: ' + error.message);
+                });
+            });
+        });
+    </script>
+</body>
+</html> 

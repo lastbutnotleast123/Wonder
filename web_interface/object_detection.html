@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>目标检测 - OpenCV图像处理与计算机视觉系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* 目标检测页面专属样式 - 深蓝色系风格 */
+        body {
+            font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+            background-color: #fafbfd;
+            color: #333;
+            padding-top: 70px; /* 为固定导航栏留出空间 */
+        }
+        
+        /* 深蓝色调头部 */
+        .header {
+            background: linear-gradient(135deg, #1a237e, #283593);
+            color: white;
+            padding: 3rem 0;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 15px rgba(26, 35, 126, 0.25);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 40%;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="rgba(255,255,255,0.15)" fill-opacity="1" d="M0,128L48,144C96,160,192,192,288,176C384,160,480,96,576,90.7C672,85,768,139,864,170.7C960,203,1056,213,1152,202.7C1248,192,1344,160,1392,144L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>');
+            background-size: cover;
+            background-position: center;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+            margin-bottom: 1.5rem;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card-header {
+            background: linear-gradient(to right, #1a237e, #283593);
+            color: white;
+            font-weight: 600;
+            padding: 1rem 1.5rem;
+            border: none;
+            border-radius: 16px 16px 0 0 !important;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(to right, #1a237e, #283593);
+            border: none;
+            border-radius: 50px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            box-shadow: 0 4px 10px rgba(26, 35, 126, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(to right, #151d69, #232d7f);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(26, 35, 126, 0.4);
+        }
+        
+        .btn-outline-primary {
+            color: #1a237e;
+            border-color: #1a237e;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-outline-primary:hover {
+            background-color: #1a237e;
+            border-color: #1a237e;
+            color: white;
+        }
+        
+        .btn-success {
+            background: linear-gradient(to right, #00796b, #009688);
+            border: none;
+            border-radius: 50px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            box-shadow: 0 4px 10px rgba(0, 121, 107, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-success:hover {
+            background: linear-gradient(to right, #00695c, #00897b);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 121, 107, 0.4);
+        }
+        
+        /* 拖放区域特效 */
+        .dropzone {
+            min-height: 200px;
+            border: 2px dashed #3949ab;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            transition: all 0.3s ease;
+            background-color: rgba(26, 35, 126, 0.03);
+        }
+        
+        .dropzone:hover {
+            background-color: rgba(26, 35, 126, 0.07);
+            border-color: #1a237e;
+        }
+        
+        .dropzone i {
+            font-size: 3rem;
+            color: #3949ab;
+            margin-bottom: 1rem;
+        }
+        
+        .image-preview {
+            max-width: 100%;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        /* 检测结果卡片样式 */
+        .detection-item {
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 12px;
+            background-color: #fff;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+        
+        .detection-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .confidence-bar {
+            height: 8px;
+            background-color: #f2f2f2;
+            border-radius: 4px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+        
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(to right, #1a237e, #3949ab);
+            border-radius: 4px;
+        }
+        
+        /* 自定义标签页 */
+        .nav-tabs .nav-link {
+            color: #6c757d;
+            font-weight: 600;
+            padding: 0.75rem 1.25rem;
+            border-radius: 8px 8px 0 0;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-tabs .nav-link.active {
+            color: #1a237e;
+            border-color: #dee2e6 #dee2e6 #fff;
+            position: relative;
+        }
+        
+        .nav-tabs .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(to right, #1a237e, #3949ab);
+            border-radius: 3px 3px 0 0;
+        }
+        
+        /* 滑块样式 */
+        .form-range::-webkit-slider-thumb {
+            background: #1a237e;
+        }
+        
+        .form-range::-moz-range-thumb {
+            background: #1a237e;
+        }
+        
+        .form-range::-ms-thumb {
+            background: #1a237e;
+        }
+        
+        .footer {
+            background: linear-gradient(135deg, #1a237e, #283593);
+            color: white;
+            padding: 2rem 0;
+            margin-top: 3rem;
+        }
+        
+        .footer a {
+            color: white;
+            transition: all 0.3s ease;
+        }
+        
+        .footer a:hover {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+        }
+        
+        /* 确保导航样式一致 */
+        .navbar .nav-link {
+            font-weight: 500 !important;
+            margin: 0 5px !important;
+            padding: 8px 16px !important;
+            border-radius: 30px !important;
+            transition: all 0.3s ease !important;
+            font-size: 0.95rem !important;
+        }
+        
+        /* 添加动画效果 */
+        .animate-on-scroll.visible {
+            animation: fadeIn 0.6s ease-out forwards;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* 结果容器样式 */
+        .results-container {
+            display: none;
+            margin-top: 2rem;
+            animation: slideUp 0.5s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* 加载动画 */
+        .spinner-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            border-radius: 16px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="index.html">
+                <img src="images/logo.png" alt="OpenCV视觉系统" class="logo-img" onerror="this.style.display='none'">
+                <i class="bi bi-camera"></i> OpenCV视觉系统
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.html">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="image_processing.html">图像处理</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="face_recognition.html">人脸识别</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="object_detection.html">目标检测</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="deep_learning.html">深度学习</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="image_retrieval.html">图像检索</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <header class="header">
+        <div class="container">
+            <h1 class="animate__animated animate__fadeInDown">目标检测</h1>
+            <p class="lead animate__animated animate__fadeInUp animate__delay-1s">快速准确地检测图像中的物体，支持多种检测算法和目标类型识别</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-7">
+                <div class="card animate-on-scroll">
+                    <div class="card-header">
+                        <i class="bi bi-image"></i> 上传图像
+                    </div>
+                    <div class="card-body">
+                        <div class="dropzone" id="dropzone">
+                            <i class="bi bi-cloud-arrow-up"></i>
+                            <p>拖放图像到此处或点击上传</p>
+                            <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                            <div class="spinner-overlay" id="uploadSpinner" style="display: none;">
+                                <div class="spinner-border" role="status">
+                                    <span class="visually-hidden">加载中...</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-center mt-3">
+                            <img id="imagePreview" class="image-preview" style="display: none;" />
+                        </div>
+                        <div class="d-flex justify-content-between mt-4">
+                            <button id="resetBtn" class="btn btn-outline-secondary" disabled>
+                                <i class="bi bi-arrow-counterclockwise"></i> 重置
+                            </button>
+                            <button id="detectBtn" class="btn btn-primary" disabled>
+                                <i class="bi bi-search"></i> 开始检测
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="card animate-on-scroll">
+                    <div class="card-header">
+                        <i class="bi bi-gear"></i> 检测参数
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="confidenceSlider" class="form-label">置信度阈值: <span id="confidenceValue">0.5</span></label>
+                            <input type="range" class="form-range" id="confidenceSlider" min="0.1" max="0.9" step="0.1" value="0.5">
+                            <small class="text-muted">值越高，检测结果越可靠，但可能会漏检一些物体</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">检测类型</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="detectionType" id="generalObjects" value="general" checked>
+                                <label class="form-check-label" for="generalObjects">
+                                    常规目标检测（轮廓检测）
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="detectionType" id="advancedObjects" value="advanced">
+                                <label class="form-check-label" for="advancedObjects">
+                                    高级目标检测（需要模型文件）
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div id="modelPathContainer" class="mb-3" style="display: none;">
+                            <label for="modelPath" class="form-label">模型路径</label>
+                            <input type="text" class="form-control" id="modelPath" placeholder="models/yolo.weights">
+                            <small class="text-muted">请指定预训练模型文件路径</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card mt-4 animate-on-scroll">
+                    <div class="card-header">
+                        <i class="bi bi-info-circle"></i> 目标检测说明
+                    </div>
+                    <div class="card-body">
+                        <p>本系统支持两种目标检测方式：</p>
+                        <ul>
+                            <li><strong>常规目标检测</strong>：基于图像处理的轮廓检测方法，无需额外模型文件</li>
+                            <li><strong>高级目标检测</strong>：基于深度学习的目标检测，需要预训练模型文件</li>
+                        </ul>
+                        <p>使用步骤：</p>
+                        <ol>
+                            <li>上传图像</li>
+                            <li>选择检测参数</li>
+                            <li>点击"开始检测"</li>
+                            <li>查看检测结果</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="results-container" id="resultsContainer">
+            <div class="card">
+                <div class="card-header">
+                    <i class="bi bi-clipboard-check"></i> 检测结果
+                </div>
+                <div class="card-body">
+                    <ul class="nav nav-tabs" id="resultTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="visual-tab" data-bs-toggle="tab" data-bs-target="#visual" type="button" role="tab" aria-controls="visual" aria-selected="true">可视化结果</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="data-tab" data-bs-toggle="tab" data-bs-target="#data" type="button" role="tab" aria-controls="data" aria-selected="false">检测数据</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content mt-3" id="resultTabsContent">
+                        <div class="tab-pane fade show active" id="visual" role="tabpanel" aria-labelledby="visual-tab">
+                            <div class="text-center">
+                                <img id="resultImage" class="results-image" />
+                            </div>
+                            <div class="d-flex justify-content-center mt-3">
+                                <a id="downloadBtn" class="btn btn-success" download="detection_result.jpg" href="#">
+                                    <i class="bi bi-download"></i> 下载结果
+                                </a>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="data" role="tabpanel" aria-labelledby="data-tab">
+                            <div class="detection-info" id="detectionInfo">
+                                <div id="detectionItems">
+                                    <!-- 检测项将被JavaScript动态添加 -->
+                                </div>
+                                <div class="text-center mt-3">
+                                    <p>总计检测到: <span id="detectionCount">0</span> 个目标</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4 mb-4 mb-md-0">
+                    <h5>关于本系统</h5>
+                    <p>基于OpenCV的图像处理与计算机视觉系统，提供多种图像处理、人脸识别、目标检测和深度学习功能。</p>
+                    <div class="social-links">
+                        <a href="#"><i class="bi bi-github"></i></a>
+                        <a href="#"><i class="bi bi-youtube"></i></a>
+                        <a href="#"><i class="bi bi-linkedin"></i></a>
+                        <a href="#"><i class="bi bi-twitter"></i></a>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <h5>快速链接</h5>
+                    <ul>
+                        <li><a href="/index.html">首页</a></li>
+                        <li><a href="/image_processing.html">图像处理</a></li>
+                        <li><a href="/face_recognition.html">人脸识别</a></li>
+                        <li><a href="/object_detection.html">目标检测</a></li>
+                        <li><a href="/deep_learning.html">深度学习</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h5>相关资源</h5>
+                    <ul>
+                        <li><a href="https://opencv.org/" target="_blank">OpenCV官网</a></li>
+                        <li><a href="https://github.com/opencv/opencv" target="_blank">OpenCV GitHub</a></li>
+                        <li><a href="https://www.tensorflow.org/" target="_blank">TensorFlow</a></li>
+                        <li><a href="https://pytorch.org/" target="_blank">PyTorch</a></li>
+                    </ul>
+                </div>
+            </div>
+            <hr>
+            <p class="text-center mb-0">© 2025 OpenCV图像处理与计算机视觉系统. 保留所有权利.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // 元素引用
+            const dropzone = document.getElementById('dropzone');
+            const fileInput = document.getElementById('fileInput');
+            const imagePreview = document.getElementById('imagePreview');
+            const uploadSpinner = document.getElementById('uploadSpinner');
+            const resetBtn = document.getElementById('resetBtn');
+            const detectBtn = document.getElementById('detectBtn');
+            const resultsContainer = document.getElementById('resultsContainer');
+            const resultImage = document.getElementById('resultImage');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const confidenceSlider = document.getElementById('confidenceSlider');
+            const confidenceValue = document.getElementById('confidenceValue');
+            const detectionType = document.getElementsByName('detectionType');
+            const modelPathContainer = document.getElementById('modelPathContainer');
+            const detectionItems = document.getElementById('detectionItems');
+            const detectionCount = document.getElementById('detectionCount');
+            const navbar = document.querySelector('.navbar');
+            
+            // 导航栏滚动效果
+            function checkScroll() {
+                if (window.scrollY > 50) {
+                    navbar.classList.add('scrolled');
+                } else {
+                    navbar.classList.remove('scrolled');
+                }
+                
+                // 滚动动画
+                document.querySelectorAll('.animate-on-scroll').forEach(element => {
+                    const elementTop = element.getBoundingClientRect().top;
+                    const elementVisible = 150;
+                    
+                    if (elementTop < window.innerHeight - elementVisible) {
+                        element.classList.add('visible');
+                    }
+                });
+            }
+            
+            // 检查滚动
+            window.addEventListener('scroll', checkScroll);
+            checkScroll(); // 初始检查
+            
+            // 文件上传与图像预览处理
+            let uploadedFile = null;
+            
+            dropzone.addEventListener('click', () => fileInput.click());
+            
+            // 拖放功能
+            dropzone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropzone.classList.add('drag-over');
+            });
+            
+            dropzone.addEventListener('dragleave', () => {
+                dropzone.classList.remove('drag-over');
+            });
+            
+            dropzone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropzone.classList.remove('drag-over');
+                
+                if (e.dataTransfer.files.length) {
+                    fileInput.files = e.dataTransfer.files;
+                    handleFileSelect(e.dataTransfer.files[0]);
+                }
+            });
+            
+            fileInput.addEventListener('change', () => {
+                if (fileInput.files.length) {
+                    handleFileSelect(fileInput.files[0]);
+                }
+            });
+            
+            function handleFileSelect(file) {
+                if (!file.type.match('image.*')) {
+                    alert('请选择图像文件！');
+                    return;
+                }
+                
+                uploadedFile = file;
+                resetBtn.disabled = false;
+                detectBtn.disabled = false;
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    imagePreview.src = e.target.result;
+                    imagePreview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+            
+            // 重置按钮功能
+            resetBtn.addEventListener('click', () => {
+                uploadedFile = null;
+                fileInput.value = '';
+                imagePreview.style.display = 'none';
+                resetBtn.disabled = true;
+                detectBtn.disabled = true;
+                resultsContainer.style.display = 'none';
+            });
+            
+            // 置信度滑块
+            confidenceSlider.addEventListener('input', () => {
+                confidenceValue.textContent = confidenceSlider.value;
+            });
+            
+            // 检测类型选择
+            for (let radio of detectionType) {
+                radio.addEventListener('change', () => {
+                    if (radio.value === 'advanced') {
+                        modelPathContainer.style.display = 'block';
+                    } else {
+                        modelPathContainer.style.display = 'none';
+                    }
+                });
+            }
+            
+            // 检测按钮
+            detectBtn.addEventListener('click', () => {
+                if (!uploadedFile) return;
+                
+                uploadSpinner.style.display = 'flex';
+                
+                // 创建表单数据
+                const formData = new FormData();
+                formData.append('image', uploadedFile);
+                
+                let operation = '';
+                for (let radio of detectionType) {
+                    if (radio.checked) {
+                        operation = radio.value === 'general' ? 'object_detect' : 'deep_detect';
+                        break;
+                    }
+                }
+                
+                formData.append('operations', operation);
+                formData.append('confidence', confidenceSlider.value);
+                
+                // 发送请求
+                fetch('/api/process', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`服务器响应错误: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    uploadSpinner.style.display = 'none';
+                    
+                    if (data.success && data.results[operation] && data.results[operation].success) {
+                        // 显示结果图像
+                        const result = data.results[operation];
+                        if (result.result_image) {
+                            resultImage.src = `data:image/jpeg;base64,${result.result_image}`;
+                            downloadBtn.href = `data:image/jpeg;base64,${result.result_image}`;
+                        }
+                        
+                        // 显示检测数据
+                        let detectionHTML = '';
+                        const detections = result.detections || [];
+                        
+                        detections.forEach((detection, index) => {
+                            const confidence = detection.confidence || 0.5;
+                            detectionHTML += `
+                                <div class="detection-item">
+                                    <div class="d-flex justify-content-between">
+                                        <span>物体 ${index + 1}</span>
+                                        <span>${(confidence * 100).toFixed(1)}%</span>
+                                    </div>
+                                    <div class="confidence-bar">
+                                        <div class="confidence-fill" style="width: ${confidence * 100}%"></div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        
+                        detectionItems.innerHTML = detectionHTML || '<p class="text-center">未检测到物体</p>';
+                        detectionCount.textContent = detections.length;
+                        
+                        // 显示结果容器
+                        resultsContainer.style.display = 'block';
+                    } else {
+                        alert('检测失败: ' + (data.results[operation]?.error || '未知错误'));
+                    }
+                })
+                .catch(error => {
+                    uploadSpinner.style.display = 'none';
+                    alert('处理请求失败: ' + error.message);
+                });
+            });
+        });
+    </script>
+</body>
+</html> 

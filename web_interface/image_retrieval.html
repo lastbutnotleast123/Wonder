@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图像检索 - OpenCV图像处理与计算机视觉系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* 图像检索页面内联样式 */
+        body {
+            font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+            background-color: #f5f1e6; /* 更暗的背景色 */
+            color: #333;
+            padding-top: 70px; /* 为固定导航栏留出空间 */
+        }
+        
+        .dropzone {
+            min-height: 200px;
+            border: 2px dashed var(--image-retrieval-primary);
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            transition: all 0.3s ease;
+            background-color: rgba(139, 101, 8, 0.05); /* 更新透明背景颜色 */
+        }
+        
+        .dropzone:hover {
+            background-color: rgba(139, 101, 8, 0.1); /* 更新悬停背景颜色 */
+            border-color: var(--image-retrieval-secondary);
+        }
+        
+        .dropzone i {
+            font-size: 3rem;
+            color: var(--image-retrieval-secondary);
+            margin-bottom: 1rem;
+        }
+        
+        .image-preview {
+            max-width: 100%;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .progress-bar {
+            background: linear-gradient(to right, var(--image-retrieval-primary), var(--image-retrieval-secondary));
+        }
+        
+        .result-card {
+            border: none;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+        }
+        
+        .result-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="index.html">
+                <img src="images/logo.png" alt="OpenCV视觉系统" class="logo-img" onerror="this.style.display='none'">
+                <i class="bi bi-camera"></i> OpenCV视觉系统
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.html">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="image_processing.html">图像处理</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="face_recognition.html">人脸识别</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="object_detection.html">目标检测</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="deep_learning.html">深度学习</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="image_retrieval.html">图像检索</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 头部 -->
+    <header class="image-retrieval-header">
+        <div class="container">
+            <h1 class="animate__animated animate__fadeInDown">图像检索系统</h1>
+            <p class="lead animate__animated animate__fadeInUp animate__delay-1s">基于内容的图像检索 (CBIR) - 通过图像找到相似图像</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="row">
+            <!-- 左侧上传区域 -->
+            <div class="col-lg-7">
+                <div class="card image-retrieval-card animate-on-scroll">
+                    <div class="card-header image-retrieval-card-header">
+                        <i class="bi bi-image"></i> 上传查询图像
+                    </div>
+                    <div class="card-body">
+                        <div class="dropzone" id="retrievalDropzone">
+                            <i class="bi bi-cloud-arrow-up"></i>
+                            <p>拖放图像到此处或点击上传</p>
+                            <input type="file" id="retrievalFileInput" accept="image/*" style="display: none;">
+                            <div class="spinner-overlay" id="uploadSpinner" style="display: none;">
+                                <div class="spinner-border" role="status">
+                                    <span class="visually-hidden">加载中...</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-center mt-3">
+                            <img id="queryImagePreview" class="image-preview" style="display: none;" />
+                        </div>
+                        <div class="d-flex justify-content-between mt-4">
+                            <button id="resetBtn" class="btn btn-outline-secondary" disabled>
+                                <i class="bi bi-arrow-counterclockwise"></i> 重置
+                            </button>
+                            <button id="searchBtn" class="btn image-retrieval-btn-primary" disabled>
+                                <i class="bi bi-search"></i> 开始检索
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 检索数据库管理 -->
+                <div class="card image-retrieval-card mt-4 animate-on-scroll">
+                    <div class="card-header image-retrieval-card-header">
+                        <i class="bi bi-database"></i> 图像数据库管理
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i> 您可以建立自己的图像数据库用于检索。图像会被提取特征并存储，以便快速检索。
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="dbFolderInput" class="form-label">添加图像到数据库</label>
+                            <div class="input-group">
+                                <input type="file" class="form-control" id="dbFileInput" accept="image/*" multiple>
+                                <button class="btn image-retrieval-btn-primary" type="button" id="uploadDbBtn">上传</button>
+                            </div>
+                            <div class="progress mt-2" style="display: none;" id="uploadProgress">
+                                <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mt-4">
+                            <button id="viewDbBtn" class="btn btn-outline-secondary">
+                                <i class="bi bi-grid"></i> 查看数据库
+                            </button>
+                            <button id="rebuildDbBtn" class="btn btn-danger">
+                                <i class="bi bi-arrow-repeat"></i> 重建索引
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 右侧检索参数 -->
+            <div class="col-lg-5">
+                <div class="card image-retrieval-card animate-on-scroll">
+                    <div class="card-header image-retrieval-card-header">
+                        <i class="bi bi-gear"></i> 检索参数
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="featureType" class="form-label">特征提取方法</label>
+                            <select class="form-select" id="featureType">
+                                <option value="sift">SIFT (尺度不变特征变换)</option>
+                                <option value="orb">ORB (快速特征点)</option>
+                                <option value="deep" selected>深度特征 (CNN)</option>
+                                <option value="color_hist">颜色直方图</option>
+                            </select>
+                            <small class="text-muted">不同特征适用于不同类型的图像检索任务</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="maxResults" class="form-label">最大结果数量</label>
+                            <select class="form-select" id="maxResults">
+                                <option value="5">5</option>
+                                <option value="10" selected>10</option>
+                                <option value="20">20</option>
+                                <option value="30">30</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="similarityThreshold" class="form-label">相似度阈值: <span id="thresholdValue">0.6</span></label>
+                            <input type="range" class="form-range" id="similarityThreshold" min="0.1" max="0.9" step="0.1" value="0.6">
+                            <small class="text-muted">阈值越高，检索结果与查询图像越相似</small>
+                        </div>
+                        
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="showMatchesCheckbox" checked>
+                            <label class="form-check-label" for="showMatchesCheckbox">
+                                显示特征匹配线
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card image-retrieval-card mt-4 animate-on-scroll">
+                    <div class="card-header image-retrieval-card-header">
+                        <i class="bi bi-info-circle"></i> 图像检索说明
+                    </div>
+                    <div class="card-body">
+                        <p>图像检索是通过分析图像内容和特征来查找相似图像的技术。本系统提供以下特征提取方法：</p>
+                        <ul>
+                            <li><strong>SIFT</strong>: 对旋转、缩放和光照变化具有鲁棒性，适合细节匹配</li>
+                            <li><strong>ORB</strong>: 计算速度快，资源消耗低，适合实时应用</li>
+                            <li><strong>深度特征</strong>: 使用预训练CNN提取高级语义特征，适合内容相似性检索</li>
+                            <li><strong>颜色直方图</strong>: 简单快速，适合基于颜色分布的检索</li>
+                        </ul>
+                        <p>使用步骤：</p>
+                        <ol>
+                            <li>上传查询图像</li>
+                            <li>选择特征提取方法和参数</li>
+                            <li>点击"开始检索"</li>
+                            <li>查看检索结果</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 检索结果 -->
+        <div class="results-container" id="resultsContainer">
+            <div class="card image-retrieval-card">
+                <div class="card-header image-retrieval-card-header">
+                    <i class="bi bi-card-list"></i> 检索结果
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <h5 class="mb-3">查询图像</h5>
+                        <div class="text-center">
+                            <img id="resultQueryImage" class="mb-3" style="max-height: 200px; max-width: 100%; border-radius: 8px; box-shadow: var(--shadow-sm);" />
+                            <p>检索到 <span id="resultCount" class="fw-bold">0</span> 个匹配结果</p>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="mt-4">
+                        <h5 class="mb-3">匹配结果</h5>
+                        <div class="row g-3" id="retrievalResults">
+                            <!-- 检索结果将在这里动态生成 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 图像数据库查看器模态框 -->
+        <div class="modal fade" id="databaseModal" tabindex="-1" aria-labelledby="databaseModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="databaseModalLabel">图像数据库内容</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row g-3" id="databaseGrid">
+                            <!-- 数据库图像将在这里动态生成 -->
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-danger" id="clearDbBtn">清空数据库</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="image-retrieval-footer mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4 mb-4 mb-md-0">
+                    <h5>关于本系统</h5>
+                    <p>基于OpenCV的图像处理与计算机视觉系统，提供多种图像处理、检索和分析功能。</p>
+                    <div class="social-links">
+                        <a href="#"><i class="bi bi-github"></i></a>
+                        <a href="#"><i class="bi bi-youtube"></i></a>
+                        <a href="#"><i class="bi bi-linkedin"></i></a>
+                        <a href="#"><i class="bi bi-twitter"></i></a>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4 mb-md-0">
+                    <h5>快速链接</h5>
+                    <ul>
+                        <li><a href="index.html">首页</a></li>
+                        <li><a href="image_processing.html">图像处理</a></li>
+                        <li><a href="face_recognition.html">人脸识别</a></li>
+                        <li><a href="object_detection.html">目标检测</a></li>
+                        <li><a href="deep_learning.html">深度学习</a></li>
+                        <li><a href="image_retrieval.html">图像检索</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h5>相关资源</h5>
+                    <ul>
+                        <li><a href="https://opencv.org/" target="_blank">OpenCV官网</a></li>
+                        <li><a href="https://docs.opencv.org/" target="_blank">OpenCV文档</a></li>
+                        <li><a href="https://github.com/opencv/opencv" target="_blank">OpenCV GitHub</a></li>
+                        <li><a href="https://www.tensorflow.org/" target="_blank">TensorFlow</a></li>
+                        <li><a href="https://pytorch.org/" target="_blank">PyTorch</a></li>
+                    </ul>
+                </div>
+            </div>
+            <hr>
+            <p class="text-center mb-0">© 2025 OpenCV图像处理与计算机视觉系统. 保留所有权利.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // 元素引用
+            const retrievalDropzone = document.getElementById('retrievalDropzone');
+            const retrievalFileInput = document.getElementById('retrievalFileInput');
+            const queryImagePreview = document.getElementById('queryImagePreview');
+            const uploadSpinner = document.getElementById('uploadSpinner');
+            const resetBtn = document.getElementById('resetBtn');
+            const searchBtn = document.getElementById('searchBtn');
+            const resultsContainer = document.getElementById('resultsContainer');
+            const retrievalResults = document.getElementById('retrievalResults');
+            const resultQueryImage = document.getElementById('resultQueryImage');
+            const resultCount = document.getElementById('resultCount');
+            const similarityThreshold = document.getElementById('similarityThreshold');
+            const thresholdValue = document.getElementById('thresholdValue');
+            const navbar = document.querySelector('.navbar');
+            const uploadProgress = document.getElementById('uploadProgress');
+            const uploadDbBtn = document.getElementById('uploadDbBtn');
+            const dbFileInput = document.getElementById('dbFileInput');
+            const viewDbBtn = document.getElementById('viewDbBtn');
+            const databaseGrid = document.getElementById('databaseGrid');
+            const databaseModal = new bootstrap.Modal(document.getElementById('databaseModal'));
+            const clearDbBtn = document.getElementById('clearDbBtn');
+            const rebuildDbBtn = document.getElementById('rebuildDbBtn');
+            
+            // 滚动效果
+            function checkScroll() {
+                if (window.scrollY > 50) {
+                    navbar.classList.add('scrolled');
+                } else {
+                    navbar.classList.remove('scrolled');
+                }
+                
+                // 滚动动画
+                document.querySelectorAll('.animate-on-scroll').forEach(element => {
+                    const elementTop = element.getBoundingClientRect().top;
+                    const elementVisible = 150;
+                    
+                    if (elementTop < window.innerHeight - elementVisible) {
+                        element.classList.add('visible');
+                    }
+                });
+            }
+            
+            // 初始检查滚动
+            window.addEventListener('scroll', checkScroll);
+            checkScroll();
+            
+            // 文件上传与图像预览处理
+            let uploadedFile = null;
+            
+            retrievalDropzone.addEventListener('click', () => retrievalFileInput.click());
+            
+            // 拖放功能
+            retrievalDropzone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                retrievalDropzone.classList.add('drag-over');
+            });
+            
+            retrievalDropzone.addEventListener('dragleave', () => {
+                retrievalDropzone.classList.remove('drag-over');
+            });
+            
+            retrievalDropzone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                retrievalDropzone.classList.remove('drag-over');
+                
+                if (e.dataTransfer.files.length) {
+                    retrievalFileInput.files = e.dataTransfer.files;
+                    handleFileSelect(e.dataTransfer.files[0]);
+                }
+            });
+            
+            retrievalFileInput.addEventListener('change', () => {
+                if (retrievalFileInput.files.length) {
+                    handleFileSelect(retrievalFileInput.files[0]);
+                }
+            });
+            
+            function handleFileSelect(file) {
+                if (!file.type.match('image.*')) {
+                    alert('请选择图像文件！');
+                    return;
+                }
+                
+                uploadedFile = file;
+                resetBtn.disabled = false;
+                searchBtn.disabled = false;
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    queryImagePreview.src = e.target.result;
+                    queryImagePreview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+            
+            // 重置按钮功能
+            resetBtn.addEventListener('click', () => {
+                uploadedFile = null;
+                retrievalFileInput.value = '';
+                queryImagePreview.style.display = 'none';
+                resetBtn.disabled = true;
+                searchBtn.disabled = true;
+                resultsContainer.style.display = 'none';
+            });
+            
+            // 相似度阈值滑块
+            similarityThreshold.addEventListener('input', () => {
+                thresholdValue.textContent = similarityThreshold.value;
+            });
+            
+            // 检索按钮功能
+            searchBtn.addEventListener('click', () => {
+                if (!uploadedFile) return;
+                
+                uploadSpinner.style.display = 'flex';
+                
+                // 创建表单数据
+                const formData = new FormData();
+                formData.append('image', uploadedFile);
+                formData.append('operations', 'image_retrieval');
+                formData.append('feature_type', document.getElementById('featureType').value);
+                formData.append('max_results', document.getElementById('maxResults').value);
+                formData.append('similarity_threshold', similarityThreshold.value);
+                formData.append('show_matches', document.getElementById('showMatchesCheckbox').checked ? '1' : '0');
+                
+                // 发送请求
+                fetch('/api/retrieval', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`服务器响应错误: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    uploadSpinner.style.display = 'none';
+                    
+                    if (data.success) {
+                        // 显示查询图像
+                        resultQueryImage.src = queryImagePreview.src;
+                        
+                        // 处理检索结果
+                        const results = data.results || [];
+                        resultCount.textContent = results.length;
+                        
+                        // 清空现有结果
+                        retrievalResults.innerHTML = '';
+                        
+                        if (results.length === 0) {
+                            retrievalResults.innerHTML = '<div class="col-12 text-center"><p>未找到匹配结果。请尝试调整检索参数或使用不同的查询图像。</p></div>';
+                        } else {
+                            // 添加结果卡片
+                            results.forEach((result, index) => {
+                                const similarityPercentage = (result.similarity * 100).toFixed(1);
+                                const card = document.createElement('div');
+                                card.className = 'col-md-6 col-lg-4';
+                                card.innerHTML = `
+                                    <div class="card h-100">
+                                        <div class="position-relative">
+                                            <img src="data:image/jpeg;base64,${result.image}" class="card-img-top" alt="检索结果图像">
+                                            <div class="position-absolute top-0 end-0 m-2">
+                                                <span class="badge bg-primary">${similarityPercentage}%</span>
+                                            </div>
+                                        </div>
+                                        <div class="card-body">
+                                            <h6 class="card-title">结果 #${index + 1}</h6>
+                                            <div class="progress mb-2">
+                                                <div class="progress-bar" role="progressbar" style="width: ${similarityPercentage}%" 
+                                                    aria-valuenow="${similarityPercentage}" aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                            <p class="card-text small">${result.filename || '未命名图像'}</p>
+                                        </div>
+                                        <div class="card-footer">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <small class="text-muted">相似度: ${similarityPercentage}%</small>
+                                                <button class="btn btn-sm btn-outline-primary view-matches-btn" data-index="${index}">
+                                                    查看匹配
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+                                retrievalResults.appendChild(card);
+                            });
+                            
+                            // 为每个"查看匹配"按钮添加事件监听器
+                            document.querySelectorAll('.view-matches-btn').forEach(button => {
+                                button.addEventListener('click', () => {
+                                    const index = parseInt(button.getAttribute('data-index'));
+                                    if (results[index].matches_image) {
+                                        const modalContent = `
+                                            <div class="modal fade" id="matchesModal" tabindex="-1" aria-hidden="true">
+                                                <div class="modal-dialog modal-lg">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title">特征匹配详情</h5>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                        </div>
+                                                        <div class="modal-body text-center">
+                                                            <img src="data:image/jpeg;base64,${results[index].matches_image}" class="img-fluid" alt="特征匹配">
+                                                            <p class="mt-3">匹配点数量: ${results[index].matches_count || '未知'}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        `;
+                                        
+                                        // 添加模态框到文档
+                                        const div = document.createElement('div');
+                                        div.innerHTML = modalContent;
+                                        document.body.appendChild(div.firstChild);
+                                        
+                                        // 显示模态框
+                                        const modal = new bootstrap.Modal(document.getElementById('matchesModal'));
+                                        modal.show();
+                                        
+                                        // 模态框关闭时移除它
+                                        document.getElementById('matchesModal').addEventListener('hidden.bs.modal', function() {
+                                            this.remove();
+                                        });
+                                    } else {
+                                        alert('没有可用的匹配图像');
+                                    }
+                                });
+                            });
+                        }
+                        
+                        // 显示结果容器
+                        resultsContainer.style.display = 'block';
+                        
+                        // 滚动到结果区域
+                        resultsContainer.scrollIntoView({ behavior: 'smooth' });
+                    } else {
+                        alert('检索失败: ' + (data.error || '未知错误'));
+                    }
+                })
+                .catch(error => {
+                    uploadSpinner.style.display = 'none';
+                    alert('处理请求失败: ' + error.message);
+                });
+            });
+            
+            // 图像数据库上传处理
+            uploadDbBtn.addEventListener('click', () => {
+                if (!dbFileInput.files.length) {
+                    alert('请选择要上传的图像文件');
+                    return;
+                }
+                
+                const formData = new FormData();
+                for (let i = 0; i < dbFileInput.files.length; i++) {
+                    formData.append('images', dbFileInput.files[i]);
+                }
+                
+                // 显示上传进度
+                uploadProgress.style.display = 'block';
+                const progressBar = uploadProgress.querySelector('.progress-bar');
+                progressBar.style.width = '0%';
+                progressBar.setAttribute('aria-valuenow', 0);
+                
+                // 发送请求
+                fetch('/api/retrieval/add_to_db', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`服务器响应错误: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    uploadProgress.style.display = 'none';
+                    
+                    if (data.success) {
+                        alert(`成功添加 ${data.added_count} 张图像到数据库`);
+                        dbFileInput.value = '';
+                    } else {
+                        alert('添加到数据库失败: ' + (data.error || '未知错误'));
+                    }
+                })
+                .catch(error => {
+                    uploadProgress.style.display = 'none';
+                    alert('上传失败: ' + error.message);
+                });
+                
+                // 模拟上传进度 (实际应用中应使用XHR的progress事件)
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += 5;
+                    if (progress > 100) {
+                        clearInterval(interval);
+                    } else {
+                        progressBar.style.width = `${progress}%`;
+                        progressBar.setAttribute('aria-valuenow', progress);
+                    }
+                }, 200);
+            });
+            
+            // 查看数据库内容
+            viewDbBtn.addEventListener('click', () => {
+                // 清空网格
+                databaseGrid.innerHTML = '<div class="col-12 text-center"><div class="spinner-border" role="status"><span class="visually-hidden">加载中...</span></div></div>';
+                
+                // 显示模态框
+                databaseModal.show();
+                
+                // 获取数据库内容
+                fetch('/api/retrieval/list_db')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`服务器响应错误: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // 清空网格
+                    databaseGrid.innerHTML = '';
+                    
+                    if (data.success && data.images && data.images.length > 0) {
+                        // 添加图像到网格
+                        data.images.forEach(image => {
+                            const col = document.createElement('div');
+                            col.className = 'col-md-3 col-sm-4 col-6';
+                            col.innerHTML = `
+                                <div class="card">
+                                    <img src="data:image/jpeg;base64,${image.thumbnail}" class="card-img-top" alt="${image.filename}">
+                                    <div class="card-body p-2">
+                                        <p class="card-text small text-truncate">${image.filename}</p>
+                                    </div>
+                                </div>
+                            `;
+                            databaseGrid.appendChild(col);
+                        });
+                    } else {
+                        databaseGrid.innerHTML = '<div class="col-12 text-center"><p>数据库为空或获取图像失败</p></div>';
+                    }
+                })
+                .catch(error => {
+                    databaseGrid.innerHTML = `<div class="col-12 text-center"><p class="text-danger">加载失败: ${error.message}</p></div>`;
+                });
+            });
+            
+            // 清空数据库
+            clearDbBtn.addEventListener('click', () => {
+                if (confirm('确定要清空整个图像数据库吗？此操作不可撤销。')) {
+                    fetch('/api/retrieval/clear_db', { method: 'POST' })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`服务器响应错误: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            alert('数据库已清空');
+                            databaseGrid.innerHTML = '<div class="col-12 text-center"><p>数据库为空</p></div>';
+                        } else {
+                            alert('清空数据库失败: ' + (data.error || '未知错误'));
+                        }
+                    })
+                    .catch(error => {
+                        alert('操作失败: ' + error.message);
+                    });
+                }
+            });
+            
+            // 重建索引
+            rebuildDbBtn.addEventListener('click', () => {
+                if (confirm('确定要重建特征索引吗？这可能需要一些时间。')) {
+                    fetch('/api/retrieval/rebuild_index', { method: 'POST' })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`服务器响应错误: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            alert('索引重建成功');
+                        } else {
+                            alert('索引重建失败: ' + (data.error || '未知错误'));
+                        }
+                    })
+                    .catch(error => {
+                        alert('操作失败: ' + error.message);
+                    });
+                }
+            });
+            
+            // 模拟一些数据库内容（仅用于演示）
+            // 实际应用中应从后端获取
+            const dummyImages = [
+                {filename: '示例图像1.jpg', thumbnail: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='},
+                {filename: '示例图像2.jpg', thumbnail: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='},
+                {filename: '示例图像3.jpg', thumbnail: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='},
+                {filename: '示例图像4.jpg', thumbnail: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='}
+            ];
+        });
+    </script>
+</body>
+</html> 
