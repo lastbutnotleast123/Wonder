@@ -1,2 +1,6 @@
-# Wonder
-Show me my own work
+![image](https://github.com/user-attachments/assets/52a0ae07-e1e3-42a1-b263-a0cd95c3e9b2)
+![image](https://github.com/user-attachments/assets/c25c828b-b968-40d5-9912-f992932cc775)
+![image](https://github.com/user-attachments/assets/058d6fef-0893-4091-bd63-3faf317590b7)
+![image](https://github.com/user-attachments/assets/4f9c7b02-df07-4acd-8348-40858571bee3)
+![image](https://github.com/user-attachments/assets/19f34b9c-2d92-4f02-8b33-3912d4e66abb)
+![Uploading image.png…]()
